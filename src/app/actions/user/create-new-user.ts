@@ -1,76 +1,168 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { User } from "@prisma/client";
-
-interface CreateUserInput {
-  id: string;
-  email: string | null;
-  name: string | null;
-  image?: string | null;
-}
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
+import { CreateUserInput, UserRole } from "@/lib/types";
 
 export async function createNewUser(): Promise<CreateUserInput | null> {
   try {
-    // Get the authenticated user from Clerk
     const { userId } = await auth();
     if (!userId) {
       console.error("No authenticated user found");
       return null;
     }
 
-    // Get the user details from Clerk
     const clerkUser = await currentUser();
     if (!clerkUser) {
       console.error("Could not get user details from Clerk");
       return null;
     }
 
-    // Check if user already exists in our database
+    // Check if user already exists
     const existingUser = await prisma.user.findUnique({
       where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        avatar: true,
+        role: true,
+      },
     });
 
     if (existingUser) {
       console.log("User already exists in database");
-      return existingUser;
+      return existingUser as CreateUserInput;
     }
 
-    // Create new user in our database
+    const email = clerkUser.emailAddresses[0]?.emailAddress ?? null;
+    const name =
+      `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
+
+    // Create new user and default workspace in a transaction
     const newUser = await prisma.$transaction(async (tx) => {
-      const createdUser = await tx.user.create({
+      // Create the workspace first
+      const workspace = await tx.workspace.create({
         data: {
-          id: userId,
-          email: clerkUser.emailAddresses[0]?.emailAddress ?? null,
-          name:
-            `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() ||
-            null,
-          image: clerkUser.imageUrl,
-          // Add any additional default fields here
-          plan: "basic", // From your schema default
-          credits: 3, // From your schema default
-          language: "english", // From your schema default
+          name: `${name ?? "My"}'s Workspace`,
+          orgnr: `USER${userId.slice(-6)}`,
+          address: "",
+          city: "",
+          zip: "",
+          maxUsers: 5,
         },
       });
 
-      // Create default workspace
-      await tx.workspace.create({
-        data: {
-          name: `${createdUser.name ?? "My"}'s Workspace`,
-          users: {
-            connect: { id: createdUser.id },
+      // Check if this is the first user for this workspace
+      const workspaceUserCount = await tx.user.count({
+        where: {
+          workspaces: {
+            some: {
+              id: workspace.id,
+            },
           },
         },
       });
 
-      return createdUser;
+      // Determine role - first user of workspace becomes admin
+      const role: UserRole =
+        workspaceUserCount === 0 ? UserRole.ADMIN : UserRole.USER;
+
+      // Create the user
+      const createdUser = await tx.user.create({
+        data: {
+          id: userId,
+          email,
+          name,
+          avatar: clerkUser.imageUrl,
+          language: "norwegian",
+          role,
+          isSuperUser: role === UserRole.ADMIN,
+          workspaces: {
+            connect: { id: workspace.id },
+          },
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatar: true,
+          role: true,
+        },
+      });
+
+      // Update stats
+      await tx.stats.upsert({
+        where: { id: "global" },
+        create: {
+          id: "global",
+          totalAccounts: 1,
+          totalWorkspaces: 1,
+        },
+        update: {
+          totalAccounts: { increment: 1 },
+          totalWorkspaces: { increment: 1 },
+        },
+      });
+
+      // Create audit log
+      await tx.auditLog.create({
+        data: {
+          userId: createdUser.id,
+          action: "USER_CREATED",
+          entity: "USER",
+          entityId: createdUser.id,
+        },
+      });
+
+      // Update Clerk user metadata
+      const client = await clerkClient();
+      await client.users.updateUserMetadata(userId, {
+        publicMetadata: {
+          role,
+          workspaceId: workspace.id,
+        },
+        privateMetadata: {
+          databaseId: createdUser.id,
+        },
+        // We can use unsafeMetadata for user preferences that can be changed from the frontend
+        unsafeMetadata: {
+          language: "norwegian",
+          theme: "light",
+        },
+      });
+
+      return createdUser as CreateUserInput;
     });
 
     console.log("Created new user:", newUser.id);
     return newUser;
   } catch (error) {
     console.error("Error creating new user:", error);
-    throw error; // Let the caller handle the error
+    throw error;
   }
+}
+
+export async function isUserAdmin(): Promise<boolean> {
+  const { userId } = await auth();
+  if (!userId) return false;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  return user?.role === UserRole.ADMIN;
+}
+
+export async function getUserRole(): Promise<UserRole | null> {
+  const { userId } = await auth();
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  return (user?.role as UserRole) || UserRole.USER;
 }
