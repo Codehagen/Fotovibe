@@ -39,7 +39,7 @@ export default function RootLayout({
             defaultTheme="light"
             enableSystem={false}
           >
-            s{children}
+            {children}
             <ThemeToggle />
             <Toaster richColors />
             <TailwindIndicator />

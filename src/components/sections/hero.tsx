@@ -23,7 +23,7 @@ function HeroPill() {
         📣 Announcement
       </div>
       <p className="text-xs font-medium text-primary sm:text-sm">
-        Introducing Acme.ai
+        Introducing Fotovibe
       </p>
       <svg
         width="12"

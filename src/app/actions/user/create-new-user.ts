@@ -43,7 +43,9 @@ export async function createNewUser(): Promise<CreateUserInput | null> {
         data: {
           id: userId,
           email: clerkUser.emailAddresses[0]?.emailAddress ?? null,
-          name: `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null,
+          name:
+            `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() ||
+            null,
           image: clerkUser.imageUrl,
           // Add any additional default fields here
           plan: "basic", // From your schema default
