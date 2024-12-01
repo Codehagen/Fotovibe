@@ -29,6 +29,21 @@ export async function getWorkspace(id: string) {
             orders: true,
           },
         },
+        subscriptions: {
+          include: {
+            plan: true,
+          },
+          orderBy: {
+            startDate: "desc",
+          },
+          take: 1,
+        },
+        invoices: {
+          orderBy: {
+            dueDate: "desc",
+          },
+          take: 12, // Last 12 months
+        },
       },
     });
 

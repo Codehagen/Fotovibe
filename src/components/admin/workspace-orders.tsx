@@ -9,6 +9,7 @@ import { ArrowUpDown } from "lucide-react";
 import { StatusBadge } from "@/components/status-badge";
 import Link from "next/link";
 import { type Order as PrismaOrder } from "@prisma/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export interface Order extends PrismaOrder {
   photographer: {
@@ -74,6 +75,37 @@ interface WorkspaceOrdersProps {
   workspaceId: string;
 }
 
+function TableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between">
+        <Skeleton className="h-8 w-[100px]" />
+        <Skeleton className="h-10 w-[140px]" />
+      </div>
+      <div className="rounded-md border">
+        <div className="border-b p-4">
+          <Skeleton className="h-8 w-[200px]" />
+        </div>
+        {[...Array(5)].map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center justify-between p-4 border-b last:border-0"
+          >
+            <div className="flex space-x-4 items-center">
+              <Skeleton className="h-6 w-[100px]" /> {/* Date */}
+              <Skeleton className="h-6 w-[150px]" /> {/* Location */}
+              <Skeleton className="h-6 w-[120px]" /> {/* Photographer */}
+              <Skeleton className="h-6 w-[120px]" /> {/* Editor */}
+              <Skeleton className="h-6 w-[100px]" /> {/* Status */}
+            </div>
+            <Skeleton className="h-8 w-[100px]" /> {/* Action button */}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function WorkspaceOrders({ workspaceId }: WorkspaceOrdersProps) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,7 +122,7 @@ export function WorkspaceOrders({ workspaceId }: WorkspaceOrdersProps) {
   }, [workspaceId]);
 
   if (isLoading) {
-    return <div>Laster...</div>;
+    return <TableSkeleton />;
   }
 
   return (
