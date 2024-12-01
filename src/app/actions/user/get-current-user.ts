@@ -14,7 +14,9 @@ export async function getCurrentUser() {
         id: true,
         name: true,
         email: true,
-        image: true,
+        avatar: true,
+        role: true,
+        isSuperUser: true,
       },
     });
 

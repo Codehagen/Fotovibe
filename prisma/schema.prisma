@@ -11,16 +11,16 @@ datasource db {
 
 // Core User Models
 model User {
-  id          String   @id @default(cuid())
-  name        String?
-  email       String?  @unique
-  phone       String?
-  avatar      String?
-  language    String?  @default("english")
-  bio         String?
-  createdAt   DateTime @default(now()) @map(name: "created_at")
-  updatedAt   DateTime @default(now()) @map(name: "updated_at")
-  
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  phone     String?
+  avatar    String?
+  language  String?  @default("english")
+  bio       String?
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @default(now()) @map(name: "updated_at")
+
   isSuperUser   Boolean        @default(false)
   role          String?        @default("user")
   workspaces    Workspace[]    @relation("UserWorkspace")
@@ -71,7 +71,7 @@ model Workspace {
   media         Media[]
   invoices      Invoice[]
   subscriptions Subscription[]
-  
+
   preferredDays  String[]
   preferredTimes String[]
 
@@ -91,11 +91,11 @@ model Plan {
   interval       String
   photosPerMonth Int
   videosPerMonth Int?
-  maxLocations   Int           @default(1)
+  maxLocations   Int            @default(1)
   features       Json?
-  isActive       Boolean       @default(true)
-  createdAt      DateTime      @default(now()) @map(name: "created_at")
-  updatedAt      DateTime      @default(now()) @map(name: "updated_at")
+  isActive       Boolean        @default(true)
+  createdAt      DateTime       @default(now()) @map(name: "created_at")
+  updatedAt      DateTime       @default(now()) @map(name: "updated_at")
   subscriptions  Subscription[]
 
   @@index([isActive])
@@ -125,16 +125,16 @@ model Subscription {
 }
 
 model Invoice {
-  id            String   @id @default(cuid())
-  workspaceId   String
-  workspace     Workspace @relation(fields: [workspaceId], references: [id])
-  amount        Float
-  status        String
-  dueDate       DateTime
-  fikenId       String?
-  createdAt     DateTime @default(now()) @map(name: "created_at")
-  updatedAt     DateTime @default(now()) @map(name: "updated_at")
-  
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  amount      Float
+  status      String
+  dueDate     DateTime
+  fikenId     String?
+  createdAt   DateTime  @default(now()) @map(name: "created_at")
+  updatedAt   DateTime  @default(now()) @map(name: "updated_at")
+
   paymentHistory PaymentHistory[]
 
   @@index([status])
@@ -161,8 +161,8 @@ model Order {
   id             String       @id @default(cuid())
   photographerId String
   photographer   Photographer @relation(fields: [photographerId], references: [id])
-  editorId      String?      // Optional as it's assigned later
-  editor        Editor?      @relation(fields: [editorId], references: [id])
+  editorId       String? // Optional as it's assigned later
+  editor         Editor?      @relation(fields: [editorId], references: [id])
   workspaceId    String
   workspace      Workspace    @relation(fields: [workspaceId], references: [id])
   orderDate      DateTime     @default(now())
@@ -177,13 +177,13 @@ model Order {
   media          Media[]
 
   // Workflow tracking
-  startedAt      DateTime?
+  startedAt        DateTime?
   editingStartedAt DateTime?
   reviewStartedAt  DateTime?
-  completedAt    DateTime?
-  
+  completedAt      DateTime?
+
   // Status history
-  statusHistory  StatusHistory[]
+  statusHistory StatusHistory[]
 
   @@index([photographerId])
   @@index([editorId])
@@ -194,9 +194,9 @@ model Order {
 }
 
 model Media {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   orderId     String?
-  order       Order?   @relation(fields: [orderId], references: [id])
+  order       Order?    @relation(fields: [orderId], references: [id])
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id])
   type        String
@@ -206,19 +206,19 @@ model Media {
   description String?
   metadata    Json?
   tags        String[]
-  status      String   // 'raw', 'edited', 'approved', 'rejected'
+  status      String // 'raw', 'edited', 'approved', 'rejected'
   size        Int?
   duration    Int?
   format      String?
-  
+
   // Editor tracking
-  editedBy    String?  // Editor ID
-  editedAt    DateTime?
-  approvedBy  String?  // Photographer ID
-  approvedAt  DateTime?
-  
-  createdAt   DateTime @default(now()) @map(name: "created_at")
-  updatedAt   DateTime @default(now()) @map(name: "updated_at")
+  editedBy   String? // Editor ID
+  editedAt   DateTime?
+  approvedBy String? // Photographer ID
+  approvedAt DateTime?
+
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @default(now()) @map(name: "updated_at")
 
   @@index([orderId])
   @@index([workspaceId])
@@ -228,16 +228,16 @@ model Media {
 
 // Feedback & Notification Models
 model Feedback {
-  id             String      @id @default(cuid())
+  id             String        @id @default(cuid())
   userId         String
-  user           User        @relation(fields: [userId], references: [id])
+  user           User          @relation(fields: [userId], references: [id])
   photographerId String?
   photographer   Photographer? @relation(fields: [photographerId], references: [id])
   editorId       String?
-  editor         Editor?      @relation(fields: [editorId], references: [id])
+  editor         Editor?       @relation(fields: [editorId], references: [id])
   rating         Int
   comment        String?
-  createdAt      DateTime    @default(now()) @map(name: "created_at")
+  createdAt      DateTime      @default(now()) @map(name: "created_at")
 
   @@index([userId])
   @@index([photographerId])
@@ -286,32 +286,32 @@ model AdminSettings {
 }
 
 model Stats {
-  id                      String   @id @default(cuid())
-  totalAccounts          Int      @default(0)
-  totalOrders            Int      @default(0)
-  totalWorkspaces        Int      @default(0)
-  totalPhotographers     Int      @default(0)
-  activeSubscriptions    Int      @default(0)
-  totalRevenue          Float    @default(0)
-  monthlyRevenue        Float    @default(0)
-  totalPhotos           Int      @default(0)
-  totalVideos           Int      @default(0)
-  averageRating         Float    @default(0)
-  completedOrders       Int      @default(0)
-  cancelledOrders       Int      @default(0)
-  totalStorage          Float    @default(0) // in GB
-  lastUpdated           DateTime @default(now())
+  id                  String   @id @default(cuid())
+  totalAccounts       Int      @default(0)
+  totalOrders         Int      @default(0)
+  totalWorkspaces     Int      @default(0)
+  totalPhotographers  Int      @default(0)
+  activeSubscriptions Int      @default(0)
+  totalRevenue        Float    @default(0)
+  monthlyRevenue      Float    @default(0)
+  totalPhotos         Int      @default(0)
+  totalVideos         Int      @default(0)
+  averageRating       Float    @default(0)
+  completedOrders     Int      @default(0)
+  cancelledOrders     Int      @default(0)
+  totalStorage        Float    @default(0) // in GB
+  lastUpdated         DateTime @default(now())
 
   // Monthly stats
-  photosThisMonth       Int      @default(0)
-  videosThisMonth       Int      @default(0)
-  ordersThisMonth       Int      @default(0)
-  revenueThisMonth      Float    @default(0)
-  
+  photosThisMonth  Int   @default(0)
+  videosThisMonth  Int   @default(0)
+  ordersThisMonth  Int   @default(0)
+  revenueThisMonth Float @default(0)
+
   // Customer satisfaction
-  averageResponseTime   Float    @default(0) // in hours
-  customerSatisfaction  Float    @default(0) // 0-100
-  photographerRatings   Json?    // Detailed rating breakdown
+  averageResponseTime  Float @default(0) // in hours
+  customerSatisfaction Float @default(0) // 0-100
+  photographerRatings  Json? // Detailed rating breakdown
 
   @@map(name: "stats")
 }
@@ -328,31 +328,31 @@ enum OrderStatus {
 
 // Add EditorRole
 model Editor {
-  id          String   @id @default(cuid())
-  name        String?
-  email       String?  @unique
-  phone       String?
-  avatar      String?
-  bio         String?
-  language    String?  @default("norwegian")
-  createdAt   DateTime @default(now()) @map(name: "created_at")
-  updatedAt   DateTime @default(now()) @map(name: "updated_at")
+  id        String   @id @default(cuid())
+  name      String?
+  email     String?  @unique
+  phone     String?
+  avatar    String?
+  bio       String?
+  language  String?  @default("norwegian")
+  createdAt DateTime @default(now()) @map(name: "created_at")
+  updatedAt DateTime @default(now()) @map(name: "updated_at")
 
-  orders      Order[]  // Orders being edited
-  feedback    Feedback[]
+  orders   Order[] // Orders being edited
+  feedback Feedback[]
 
   @@map(name: "editors")
 }
 
 // Add StatusHistory model to track status changes
 model StatusHistory {
-  id        String     @id @default(cuid())
+  id        String      @id @default(cuid())
   orderId   String
-  order     Order      @relation(fields: [orderId], references: [id])
+  order     Order       @relation(fields: [orderId], references: [id])
   status    OrderStatus
-  changedBy String     // User ID who changed the status
+  changedBy String // User ID who changed the status
   notes     String?
-  createdAt DateTime   @default(now())
+  createdAt DateTime    @default(now())
 
   @@index([orderId])
   @@map(name: "status_history")
