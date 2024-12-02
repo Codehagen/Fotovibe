@@ -391,6 +391,7 @@ model EditorChecklist {
   editingStartedAt DateTime?
   uploadedAt       DateTime?
   completedAt      DateTime?
+  reviewUrl        String?
   updatedAt        DateTime  @updatedAt
 
   @@map(name: "editor_checklists")
