@@ -2,8 +2,9 @@
 
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
+import { OrderStatus } from "@prisma/client";
 
-export async function getMyOrders() {
+export async function getMyOrders(type: "active" | "completed") {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -20,18 +21,25 @@ export async function getMyOrders() {
       throw new Error("Photographer profile not found");
     }
 
-    // Get photographer's orders
+    // Get orders based on type
     const orders = await prisma.order.findMany({
       where: {
         photographerId: photographer.id,
         status: {
-          not: "PENDING_PHOTOGRAPHER",
+          in:
+            type === "active"
+              ? [
+                  OrderStatus.NOT_STARTED,
+                  OrderStatus.IN_PROGRESS,
+                  OrderStatus.EDITING,
+                  OrderStatus.IN_REVIEW,
+                ]
+              : [OrderStatus.COMPLETED],
         },
       },
       select: {
         id: true,
         orderDate: true,
-        scheduledDate: true,
         location: true,
         status: true,
         workspace: {
@@ -41,7 +49,7 @@ export async function getMyOrders() {
         },
       },
       orderBy: {
-        scheduledDate: "desc",
+        orderDate: type === "active" ? "asc" : "desc",
       },
     });
 
@@ -53,4 +61,4 @@ export async function getMyOrders() {
       error: error instanceof Error ? error.message : "Failed to fetch orders",
     };
   }
-} 
+}

@@ -12,7 +12,7 @@ import { type ColumnDef } from "@tanstack/react-table";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { getAvailableOrders } from "@/app/actions/photographer/get-available-orders";
-
+import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 interface AvailableOrder {
   id: string;
   orderDate: Date;
@@ -146,6 +146,10 @@ export function AvailableOrders() {
 
     loadOrders();
   }, []);
+
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
 
   return (
     <DataTable

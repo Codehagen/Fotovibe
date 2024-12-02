@@ -121,12 +121,6 @@ const getAllNavItems = (): NavItem[] => {
       roleLabel: "USER",
     },
     {
-      title: "Media",
-      url: "/media",
-      icon: ImageIcon,
-      roleLabel: "USER",
-    },
-    {
       title: "Faktura",
       url: "/billing",
       icon: CreditCard,
@@ -140,34 +134,16 @@ const getAllNavItems = (): NavItem[] => {
       roleLabel: "PHOTOGRAPHER",
     },
     {
-      title: "Photographer Media",
-      url: "/photographer/media",
-      icon: ImageIcon,
-      roleLabel: "PHOTOGRAPHER",
-    },
-    {
       title: "Review",
-      url: "/review",
+      url: "/fotograf/review",
       icon: Clock,
       roleLabel: "PHOTOGRAPHER",
     },
     // Editor items
     {
-      title: "Redigering",
-      url: "/editing",
+      title: "Editor",
+      url: "/editor",
       icon: Edit2,
-      roleLabel: "EDITOR",
-    },
-    {
-      title: "Editor Media",
-      url: "/editor/media",
-      icon: ImageIcon,
-      roleLabel: "EDITOR",
-    },
-    {
-      title: "Review Queue",
-      url: "/review-queue",
-      icon: Clock,
       roleLabel: "EDITOR",
     },
     // Admin items

@@ -15,7 +15,6 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
-  Loader2,
   AlertCircle,
   PhoneCall,
   Upload,
@@ -47,7 +46,7 @@ const orderStatusMap: Record<
   OrderStatus,
   {
     label: string;
-    variant: "default" | "secondary" | "destructive" | "outline" | "success";
+    variant: "default" | "secondary" | "destructive" | "outline";
     icon: LucideIcon;
   }
 > = {
@@ -71,9 +70,14 @@ const orderStatusMap: Record<
     variant: "secondary",
     icon: Edit,
   },
+  [OrderStatus.IN_REVIEW]: {
+    label: "Under gjennomgang",
+    variant: "secondary",
+    icon: Eye,
+  },
   [OrderStatus.COMPLETED]: {
     label: "Fullført",
-    variant: "success",
+    variant: "default",
     icon: CheckCircle2,
   },
   [OrderStatus.CANCELLED]: {
@@ -216,14 +220,12 @@ export const columns: ColumnDef<Order>[] = [
 
       return (
         <Badge
-          variant={
-            statusConfig.variant as
-              | "default"
-              | "secondary"
-              | "destructive"
-              | "outline"
-          }
-          className="flex items-center gap-1"
+          variant={statusConfig.variant}
+          className={cn(
+            "flex items-center gap-1",
+            status === OrderStatus.COMPLETED &&
+              "bg-green-500 hover:bg-green-500/80"
+          )}
         >
           <Icon className="mr-1 h-3 w-3" />
           {statusConfig.label}

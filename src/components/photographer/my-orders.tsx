@@ -2,7 +2,20 @@
 
 import { DataTable } from "@/components/tables/admin/data-table";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Clock, Building2, Eye } from "lucide-react";
+import {
+  Calendar,
+  MapPin,
+  Building2,
+  Eye,
+  Link as LinkIcon,
+  Clock,
+  AlertCircle,
+  Camera,
+  Edit,
+  CheckCircle2,
+  XCircle,
+  LucideIcon,
+} from "lucide-react";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import { type ColumnDef } from "@tanstack/react-table";
@@ -11,13 +24,11 @@ import { OrderStatus } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { getMyOrders } from "@/app/actions/photographer/get-my-orders";
 import { useEffect, useState } from "react";
-import { AlertCircle, Camera, CheckCircle2, XCircle, Edit } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { TableSkeleton } from "@/components/skeletons/table-skeleton";
 
 interface MyOrder {
   id: string;
   orderDate: Date;
-  scheduledDate: Date;
   location: string;
   status: OrderStatus;
   workspace: {
@@ -29,7 +40,7 @@ const orderStatusMap: Record<
   OrderStatus,
   {
     label: string;
-    variant: "default" | "secondary" | "destructive" | "outline" | "success";
+    variant: "default" | "secondary" | "destructive" | "outline";
     icon: LucideIcon;
   }
 > = {
@@ -53,9 +64,14 @@ const orderStatusMap: Record<
     variant: "secondary",
     icon: Edit,
   },
+  [OrderStatus.IN_REVIEW]: {
+    label: "Under gjennomgang",
+    variant: "secondary",
+    icon: Eye,
+  },
   [OrderStatus.COMPLETED]: {
     label: "Fullført",
-    variant: "success",
+    variant: "default",
     icon: CheckCircle2,
   },
   [OrderStatus.CANCELLED]: {
@@ -79,19 +95,6 @@ const columns: ColumnDef<MyOrder>[] = [
               locale: nb,
             }).replace(/^\w/, (c) => c.toUpperCase())}
           </span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "scheduledDate",
-    header: "Dato",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("scheduledDate"));
-      return (
-        <div className="flex items-center gap-2">
-          <Clock className="h-4 w-4 text-muted-foreground" />
-          <span>{format(date, "PPP", { locale: nb })}</span>
         </div>
       );
     },
@@ -158,14 +161,18 @@ const columns: ColumnDef<MyOrder>[] = [
   },
 ];
 
-export function MyOrders() {
+interface MyOrdersProps {
+  type: "active" | "completed";
+}
+
+export function MyOrders({ type }: MyOrdersProps) {
   const [orders, setOrders] = useState<MyOrder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadOrders() {
       try {
-        const result = await getMyOrders();
+        const result = await getMyOrders(type);
         if (result.success) {
           setOrders(result.data.orders);
         }
@@ -177,7 +184,11 @@ export function MyOrders() {
     }
 
     loadOrders();
-  }, []);
+  }, [type]);
+
+  if (isLoading) {
+    return <TableSkeleton />;
+  }
 
   return (
     <DataTable

@@ -6,10 +6,15 @@ import { MyOrders } from "@/components/photographer/my-orders";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Camera, Clock, CheckCircle2, Calendar } from "lucide-react";
 import { PhotographerOverview } from "@/components/photographer/overview";
+import { format } from "date-fns";
+import { nb } from "date-fns/locale";
+import { getPhotographerStats } from "@/app/actions/photographer/get-stats";
 
 export default async function PhotographerPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
+
+  const { success, data: stats } = await getPhotographerStats();
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -28,7 +33,8 @@ export default async function PhotographerPage() {
         <TabsList>
           <TabsTrigger value="overview">Oversikt</TabsTrigger>
           <TabsTrigger value="available">Tilgjengelige oppdrag</TabsTrigger>
-          <TabsTrigger value="my-orders">Mine oppdrag</TabsTrigger>
+          <TabsTrigger value="active">Mine oppdrag</TabsTrigger>
+          <TabsTrigger value="completed">Fullførte oppdrag</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -42,7 +48,9 @@ export default async function PhotographerPage() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3</div>
+                <div className="text-2xl font-bold">
+                  {stats?.availableOrders || 0}
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -53,7 +61,9 @@ export default async function PhotographerPage() {
                 <Camera className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">2</div>
+                <div className="text-2xl font-bold">
+                  {stats?.activeOrders || 0}
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -64,7 +74,13 @@ export default async function PhotographerPage() {
                 <Calendar className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">I morgen</div>
+                <div className="text-2xl font-bold">
+                  {stats?.nextShoot
+                    ? format(new Date(stats.nextShoot), "d. MMM", {
+                        locale: nb,
+                      })
+                    : "Ingen planlagt"}
+                </div>
               </CardContent>
             </Card>
             <Card>
@@ -75,7 +91,9 @@ export default async function PhotographerPage() {
                 <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">12</div>
+                <div className="text-2xl font-bold">
+                  {stats?.completedOrders || 0}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -118,8 +136,12 @@ export default async function PhotographerPage() {
           <AvailableOrders />
         </TabsContent>
 
-        <TabsContent value="my-orders">
-          <MyOrders />
+        <TabsContent value="active">
+          <MyOrders type="active" />
+        </TabsContent>
+
+        <TabsContent value="completed">
+          <MyOrders type="completed" />
         </TabsContent>
       </Tabs>
     </div>
