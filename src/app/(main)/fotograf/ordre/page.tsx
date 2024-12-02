@@ -14,7 +14,6 @@ export default async function OrdersPage() {
   if (!user) redirect("/sign-in");
 
   const { success, data, error } = await getOrders();
-  console.log(data);
 
   if (!success || !data) {
     return <div>Error: {error}</div>;

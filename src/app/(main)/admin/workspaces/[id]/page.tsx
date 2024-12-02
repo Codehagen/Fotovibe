@@ -387,7 +387,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
             </Card>
 
             {/* Usage This Month */}
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle>Månedens forbruk</CardTitle>
               </CardHeader>
@@ -447,7 +447,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                   </div>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Subscription History */}
             <Card>

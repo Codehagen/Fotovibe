@@ -42,6 +42,7 @@ model Photographer {
   avatar    String?
   bio       String?
   language  String?  @default("english")
+  clerkId   String?  @unique
   createdAt DateTime @default(now()) @map(name: "created_at")
   updatedAt DateTime @default(now()) @map(name: "updated_at")
 
@@ -158,17 +159,17 @@ model PaymentHistory {
 
 // Order & Media Models
 model Order {
-  id             String       @id @default(cuid())
-  photographerId String
-  photographer   Photographer @relation(fields: [photographerId], references: [id])
-  editorId       String? // Optional as it's assigned later
-  editor         Editor?      @relation(fields: [editorId], references: [id])
+  id             String        @id @default(cuid())
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id])
   workspaceId    String
-  workspace      Workspace    @relation(fields: [workspaceId], references: [id])
-  orderDate      DateTime     @default(now())
-  scheduledDate  DateTime
+  photographer   Photographer? @relation(fields: [photographerId], references: [id])
+  photographerId String?
+  editor         Editor?       @relation(fields: [editorId], references: [id])
+  editorId       String?
+  status         OrderStatus
+  orderDate      DateTime      @default(now())
+  scheduledDate  DateTime?
   location       String
-  status         OrderStatus  @default(NOT_STARTED)
   requirements   String?
   photoCount     Int?
   videoCount     Int?
@@ -181,13 +182,17 @@ model Order {
   editingStartedAt DateTime?
   reviewStartedAt  DateTime?
   completedAt      DateTime?
+  uploadedAt       DateTime?
 
   // Status history
   statusHistory StatusHistory[]
 
+  checklist       OrderChecklist?
+  EditorChecklist EditorChecklist?
+
+  @@index([workspaceId])
   @@index([photographerId])
   @@index([editorId])
-  @@index([workspaceId])
   @@index([scheduledDate])
   @@index([status])
   @@map(name: "orders")
@@ -318,9 +323,10 @@ model Stats {
 
 // Add OrderStatus enum for better type safety
 enum OrderStatus {
+  PENDING_PHOTOGRAPHER
   NOT_STARTED
-  STARTED
-  IN_EDITING
+  IN_PROGRESS
+  EDITING
   IN_REVIEW
   COMPLETED
   CANCELLED
@@ -335,10 +341,11 @@ model Editor {
   avatar    String?
   bio       String?
   language  String?  @default("norwegian")
+  clerkId   String?  @unique
   createdAt DateTime @default(now()) @map(name: "created_at")
   updatedAt DateTime @default(now()) @map(name: "updated_at")
 
-  orders   Order[] // Orders being edited
+  orders   Order[]
   feedback Feedback[]
 
   @@map(name: "editors")
@@ -356,4 +363,35 @@ model StatusHistory {
 
   @@index([orderId])
   @@map(name: "status_history")
+}
+
+// Add this new model
+model OrderChecklist {
+  id          String    @id @default(cuid())
+  order       Order     @relation(fields: [orderId], references: [id])
+  orderId     String    @unique
+  contactedAt DateTime?
+  scheduledAt DateTime?
+  dropboxUrl  String?
+  uploadedAt  DateTime?
+  updatedAt   DateTime  @updatedAt
+
+  // Additional fields for better tracking
+  contactNotes    String? // Notes from customer contact
+  schedulingNotes String? // Any special scheduling notes
+  uploadNotes     String? // Notes about the upload
+
+  @@map(name: "order_checklists")
+}
+
+model EditorChecklist {
+  id               String    @id @default(cuid())
+  order            Order     @relation(fields: [orderId], references: [id])
+  orderId          String    @unique
+  editingStartedAt DateTime?
+  uploadedAt       DateTime?
+  completedAt      DateTime?
+  updatedAt        DateTime  @updatedAt
+
+  @@map(name: "editor_checklists")
 }

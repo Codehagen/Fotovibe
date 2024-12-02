@@ -135,7 +135,7 @@ const getAllNavItems = (): NavItem[] => {
     // Photographer items
     {
       title: "Oppdrag",
-      url: "/assignments",
+      url: "/fotograf/",
       icon: Calendar,
       roleLabel: "PHOTOGRAPHER",
     },

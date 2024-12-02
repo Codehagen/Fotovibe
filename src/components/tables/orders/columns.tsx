@@ -1,107 +1,250 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
+import { format } from "date-fns";
+import { nb } from "date-fns/locale";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { StatusBadge } from "@/components/status-badge";
-import { type Order as PrismaOrder } from "@prisma/client";
+import { OrderStatus } from "@prisma/client";
+import {
+  Calendar,
+  MapPin,
+  Camera,
+  Eye,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Loader2,
+  AlertCircle,
+  PhoneCall,
+  Upload,
+  Edit,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
-// Extend the Prisma Order type with the related fields we need
-export interface Order extends PrismaOrder {
+export interface Order {
+  id: string;
+  status: OrderStatus;
+  location: string;
   photographer: {
     name: string | null;
-  };
-  editor: {
-    name: string | null;
   } | null;
-  customerName: string; // Added since this is derived from workspace name
+  workspace: {
+    name: string;
+  };
+  orderDate: Date;
+  scheduledDate: Date;
+  checklist?: {
+    contactedAt: Date | null;
+    scheduledAt: Date | null;
+    dropboxUrl: string | null;
+  } | null;
 }
+
+const orderStatusMap: Record<
+  OrderStatus,
+  {
+    label: string;
+    variant: "default" | "secondary" | "destructive" | "outline" | "success";
+    icon: LucideIcon;
+  }
+> = {
+  [OrderStatus.PENDING_PHOTOGRAPHER]: {
+    label: "Venter på fotograf",
+    variant: "outline",
+    icon: Clock,
+  },
+  [OrderStatus.NOT_STARTED]: {
+    label: "Ikke startet",
+    variant: "outline",
+    icon: AlertCircle,
+  },
+  [OrderStatus.IN_PROGRESS]: {
+    label: "Under arbeid",
+    variant: "default",
+    icon: Camera,
+  },
+  [OrderStatus.EDITING]: {
+    label: "Under redigering",
+    variant: "secondary",
+    icon: Edit,
+  },
+  [OrderStatus.COMPLETED]: {
+    label: "Fullført",
+    variant: "success",
+    icon: CheckCircle2,
+  },
+  [OrderStatus.CANCELLED]: {
+    label: "Kansellert",
+    variant: "destructive",
+    icon: XCircle,
+  },
+};
 
 export const columns: ColumnDef<Order>[] = [
   {
-    accessorKey: "customerName",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Navn
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    accessorKey: "orderDate",
+    header: "Opprettet",
     cell: ({ row }) => {
+      const date = new Date(row.getValue("orderDate"));
       return (
-        <Link href={`/ordre/${row.original.id}`} className="hover:underline">
-          {row.getValue("customerName")}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span>
+            {format(date, "PPP", {
+              locale: nb,
+            })}
+          </span>
+        </div>
       );
     },
   },
   {
     accessorKey: "scheduledDate",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Dato
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      );
-    },
+    header: "Planlagt",
     cell: ({ row }) => {
-      return new Date(row.getValue("scheduledDate")).toLocaleDateString(
-        "nb-NO"
+      const date = row.getValue("scheduledDate") as Date | null;
+      const checklist = row.original.checklist;
+
+      if (!date) {
+        return (
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Ikke planlagt</span>
+          </div>
+        );
+      }
+
+      const isRescheduled =
+        checklist?.scheduledAt &&
+        new Date(checklist.scheduledAt).getTime() !== new Date(date).getTime();
+
+      if (isRescheduled) {
+        console.log("Row:", row.original.id);
+        console.log("Original date:", new Date(date));
+        console.log("Checklist date:", new Date(checklist?.scheduledAt!));
+      }
+
+      return (
+        <div className="flex items-center gap-2">
+          <Clock
+            className={cn(
+              "h-4 w-4",
+              isRescheduled ? "text-orange-500" : "text-muted-foreground"
+            )}
+          />
+          <div className="flex flex-col">
+            <span>
+              {format(new Date(date), "PPP", {
+                locale: nb,
+              })}
+            </span>
+            {isRescheduled && (
+              <span className="text-xs text-orange-500">
+                Endret til:{" "}
+                {format(new Date(checklist.scheduledAt!), "PPP", {
+                  locale: nb,
+                })}
+              </span>
+            )}
+          </div>
+        </div>
       );
     },
   },
   {
     accessorKey: "location",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Lokasjon
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+    header: "Lokasjon",
+    cell: ({ row }) => (
+      <div className="flex items-center gap-2">
+        <MapPin className="h-4 w-4 text-muted-foreground" />
+        <span>{row.getValue("location")}</span>
+      </div>
+    ),
+  },
+  {
+    accessorKey: "photographer",
+    header: "Fotograf",
+    cell: ({ row }) => {
+      const photographer = row.original.photographer;
+      return photographer ? (
+        <div className="flex items-center gap-2">
+          <Camera className="h-4 w-4 text-muted-foreground" />
+          <span>{photographer.name}</span>
+        </div>
+      ) : (
+        <Badge variant="outline">Ikke tildelt</Badge>
       );
     },
   },
   {
-    accessorKey: "photographerId",
-    header: ({ column }) => {
+    accessorKey: "checklist",
+    header: "Fremdrift",
+    cell: ({ row }) => {
+      const checklist = row.original.checklist;
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Fotograf
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-2">
+          <PhoneCall
+            className={cn(
+              "h-4 w-4",
+              checklist?.contactedAt
+                ? "text-green-500"
+                : "text-muted-foreground"
+            )}
+          />
+          <Calendar
+            className={cn(
+              "h-4 w-4",
+              checklist?.scheduledAt
+                ? "text-green-500"
+                : "text-muted-foreground"
+            )}
+          />
+        </div>
       );
     },
   },
   {
     accessorKey: "status",
-    header: ({ column }) => {
+    header: "Status",
+    cell: ({ row }) => {
+      const status = row.getValue("status") as OrderStatus;
+      const statusConfig = orderStatusMap[status];
+      const Icon = statusConfig.icon;
+
       return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        <Badge
+          variant={
+            statusConfig.variant as
+              | "default"
+              | "secondary"
+              | "destructive"
+              | "outline"
+          }
+          className="flex items-center gap-1"
         >
-          Status
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
+          <Icon className="mr-1 h-3 w-3" />
+          {statusConfig.label}
+        </Badge>
       );
     },
+  },
+  {
+    id: "actions",
     cell: ({ row }) => {
-      return <StatusBadge status={row.getValue("status")} />;
+      return (
+        <Button asChild variant="ghost" size="sm">
+          <Link
+            href={`/ordre/${row.original.id}`}
+            className="flex items-center gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            Se ordre
+          </Link>
+        </Button>
+      );
     },
   },
 ];
