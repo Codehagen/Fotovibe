@@ -43,7 +43,13 @@
 
 import { getCurrentUser } from "@/app/actions/user/get-current-user";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,11 +77,18 @@ import { CreatePhotographerDialog } from "@/components/admin/create-photographer
 import { getEditors } from "@/app/actions/admin/get-editors";
 import { EditorsTable } from "@/components/admin/editors-table";
 import { CreateEditorDialog } from "@/components/admin/create-editor-dialog";
+import { getDashboardMetrics } from "@/app/actions/admin/get-dashboard-metrics";
+import { RecentActivities } from "@/components/admin/recent-activities";
+import { PhotographerPerformance } from "@/components/admin/photographer-performance";
+import { EditorPerformance } from "@/components/admin/editor-performance";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/sign-in");
   if (!user.isSuperUser) redirect("/");
+
+  const { success: metricsSuccess, data: metrics } =
+    await getDashboardMetrics();
 
   const { success: workspacesSuccess, data: workspacesData } =
     await getWorkspaces();
@@ -116,7 +129,7 @@ export default async function AdminPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {workspacesData?.totalWorkspaces || 0}
+                  {metrics?.activeWorkspaces || 0}
                 </div>
               </CardContent>
             </Card>
@@ -129,9 +142,13 @@ export default async function AdminPage() {
                 <Camera className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">24</div>
+                <div className="text-2xl font-bold">
+                  {metrics?.activeOrders.current || 0}
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  +12% fra forrige måned
+                  {metrics?.activeOrders.percentageChange > 0 ? "+" : ""}
+                  {metrics?.activeOrders.percentageChange.toFixed(1)}% fra
+                  forrige måned
                 </p>
               </CardContent>
             </Card>
@@ -144,9 +161,13 @@ export default async function AdminPage() {
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3.2 dager</div>
+                <div className="text-2xl font-bold">
+                  {metrics?.averageDeliveryTime.current.toFixed(1)} dager
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  -8% fra forrige måned
+                  {metrics?.averageDeliveryTime.percentageChange > 0 ? "+" : ""}
+                  {metrics?.averageDeliveryTime.percentageChange.toFixed(1)}%
+                  fra forrige måned
                 </p>
               </CardContent>
             </Card>
@@ -159,29 +180,29 @@ export default async function AdminPage() {
                 <Star className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">4.8/5</div>
+                <div className="text-2xl font-bold">
+                  {metrics?.customerSatisfaction.rating.toFixed(1)}/5
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  Basert på 45 tilbakemeldinger
+                  Basert på {metrics?.customerSatisfaction.totalReviews || 0}{" "}
+                  tilbakemeldinger
                 </p>
               </CardContent>
             </Card>
           </div>
 
           <div className="grid gap-4 md:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Ordre oversikt</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Overview />
-              </CardContent>
-            </Card>
+            <div className="col-span-4">
+              <Overview data={metrics?.monthlyOrders || []} />
+            </div>
 
             <Card className="col-span-3">
               <CardHeader>
                 <CardTitle>Siste aktiviteter</CardTitle>
               </CardHeader>
-              <CardContent>{/* <RecentActivities /> */}</CardContent>
+              <CardContent>
+                <RecentActivities activities={metrics?.recentActivity || []} />
+              </CardContent>
             </Card>
           </div>
 
@@ -189,15 +210,27 @@ export default async function AdminPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Fotograf ytelse</CardTitle>
+                <CardDescription>
+                  Oversikt over fotografenes leveranser
+                </CardDescription>
               </CardHeader>
-              <CardContent>{/* <PhotographerPerformance /> */}</CardContent>
+              <CardContent>
+                <PhotographerPerformance
+                  data={metrics?.photographerPerformance || []}
+                />
+              </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
                 <CardTitle>Editor ytelse</CardTitle>
+                <CardDescription>
+                  Oversikt over editorenes leveranser
+                </CardDescription>
               </CardHeader>
-              <CardContent>{/* <EditorPerformance /> */}</CardContent>
+              <CardContent>
+                <EditorPerformance data={metrics?.editorPerformance || []} />
+              </CardContent>
             </Card>
           </div>
         </TabsContent>
