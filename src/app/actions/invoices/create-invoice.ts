@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { createFikenInvoice } from "@/lib/fiken";
+import { createFikenInvoice } from "@/lib/fiken/fiken";
 import { getCurrentUser } from "../user/get-current-user";
 import { revalidatePath } from "next/cache";
 
