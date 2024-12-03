@@ -360,9 +360,12 @@ export async function getDashboardMetrics(): Promise<{
       const completedOrders = editor.orders.filter(
         (order) => order.status === OrderStatus.COMPLETED
       ).length;
-      const activeOrders = editor.orders.filter((order) =>
-        [OrderStatus.EDITING, OrderStatus.IN_REVIEW].includes(order.status)
-      ).length;
+      const activeOrders = editor.orders.filter((order) => {
+        const status = order.status as OrderStatus;
+        return (
+          status === OrderStatus.EDITING || status === OrderStatus.IN_REVIEW
+        );
+      }).length;
 
       const deliveryTimes = editor.orders
         .filter((order) => order.completedAt && order.editingStartedAt)
