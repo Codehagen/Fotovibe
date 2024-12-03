@@ -43,11 +43,16 @@ model Photographer {
   bio       String?
   language  String?  @default("english")
   clerkId   String?  @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now()) @map(name: "created_at")
   updatedAt DateTime @default(now()) @map(name: "updated_at")
 
-  orders   Order[]
-  feedback Feedback[]
+  orders    Order[]
+  feedback  Feedback[]
+  Country   Country?   @relation(fields: [countryId], references: [id])
+  countryId String?
+  Zone      Zone?      @relation(fields: [zoneId], references: [id])
+  zoneId    String?
 
   @@index([email])
   @@index([name])
@@ -76,10 +81,15 @@ model Workspace {
   preferredDays  String[]
   preferredTimes String[]
 
+  countryId String
+  country   Country @relation(fields: [countryId], references: [id])
+  zones     Zone[] // Many-to-many with zones
+
   @@index([orgnr])
   @@index([city])
   @@index([name])
   @@index([orgnr, name])
+  @@index([countryId])
   @@map(name: "workspaces")
 }
 
@@ -389,4 +399,35 @@ model EditorChecklist {
   updatedAt        DateTime  @updatedAt
 
   @@map(name: "editor_checklists")
+}
+
+// Add these new models
+model Country {
+  id        String   @id @default(cuid())
+  code      String   @unique // ISO code (e.g., NO, SE, DK)
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  zones         Zone[]
+  workspaces    Workspace[]
+  photographers Photographer[]
+
+  @@map(name: "countries")
+}
+
+model Zone {
+  id          String   @id @default(cuid())
+  name        String
+  countryId   String
+  country     Country  @relation(fields: [countryId], references: [id])
+  postalCodes String[] // Array of postal codes in this zone
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspaces    Workspace[]
+  photographers Photographer[]
+
+  @@index([countryId])
+  @@map(name: "zones")
 }

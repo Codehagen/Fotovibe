@@ -39,6 +39,15 @@ export async function createNewUser(): Promise<CreateUserInput | null> {
     const name =
       `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
 
+    // Get default country (Norway)
+    const defaultCountry = await prisma.country.findUnique({
+      where: { code: "NO" },
+    });
+
+    if (!defaultCountry) {
+      throw new Error("Default country not found. Please run db:seed first.");
+    }
+
     // Create new user and default workspace in a transaction
     const newUser = await prisma.$transaction(async (tx) => {
       // Create the workspace first
@@ -50,6 +59,7 @@ export async function createNewUser(): Promise<CreateUserInput | null> {
           city: "",
           zip: "",
           maxUsers: 5,
+          countryId: defaultCountry.id,
         },
       });
 

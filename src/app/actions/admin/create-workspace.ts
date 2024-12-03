@@ -34,6 +34,15 @@ export async function createWorkspace(
       throw new Error("Unauthorized: Admin access required");
     }
 
+    // Get default country (Norway)
+    const defaultCountry = await prisma.country.findUnique({
+      where: { code: "NO" },
+    });
+
+    if (!defaultCountry) {
+      throw new Error("Default country not found. Please run db:seed first.");
+    }
+
     const validatedFields = createWorkspaceSchema.parse(input);
 
     const workspace = await prisma.workspace.create({
@@ -45,6 +54,7 @@ export async function createWorkspace(
         zip: validatedFields.zip,
         maxUsers: validatedFields.maxUsers,
         industry: validatedFields.industry,
+        countryId: defaultCountry.id,
       },
     });
 

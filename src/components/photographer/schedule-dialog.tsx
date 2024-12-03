@@ -13,16 +13,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { updateOrderChecklist } from "@/app/actions/photographer/update-order-checklist";
-import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ScheduleDialogProps {
   orderId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  currentDate?: Date;
+  currentDate?: Date | null;
 }
 
 export function ScheduleDialog({
@@ -31,40 +30,42 @@ export function ScheduleDialog({
   onOpenChange,
   currentDate,
 }: ScheduleDialogProps) {
-  const [date, setDate] = useState<Date | undefined>(currentDate);
-  const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    currentDate || undefined
+  );
 
-  async function handleSubmit() {
-    if (!date) {
-      toast.error("Velg en dato");
+  async function handleSchedule() {
+    if (!selectedDate) {
+      toast.error("Velg en dato først");
       return;
     }
 
-    const scheduledDate = new Date(date);
-    scheduledDate.setHours(12, 0, 0, 0);
-
-    setIsSubmitting(true);
+    setIsUpdating(true);
     try {
-      const result = await updateOrderChecklist(orderId, {
+      const response = await updateOrderChecklist(orderId, {
         type: "schedule",
-        scheduledDate,
-        notes: `Tidspunkt booket: ${format(scheduledDate, "PPP", {
-          locale: nb,
-        })}${notes ? `\nNoter: ${notes}` : ""}`,
+        scheduledDate: selectedDate,
       });
 
-      if (result.success) {
-        toast.success("Tidspunkt er booket");
-        onOpenChange(false);
-        window.location.reload();
-      } else {
-        toast.error(result.error);
+      if (!response.success) {
+        throw new Error(response.error);
       }
+
+      toast.success("Tidspunkt oppdatert", {
+        description: `Oppdraget er satt til ${format(selectedDate, "PPP", {
+          locale: nb,
+        })}`,
+      });
+      onOpenChange(false);
     } catch (error) {
-      toast.error("Noe gikk galt");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Kunne ikke oppdatere tidspunkt"
+      );
     } finally {
-      setIsSubmitting(false);
+      setIsUpdating(false);
     }
   }
 
@@ -72,38 +73,37 @@ export function ScheduleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Book tidspunkt</DialogTitle>
+          <DialogTitle>Velg dato for oppdraget</DialogTitle>
           <DialogDescription>
-            Velg dato for fotografering. Husk å avtale tidspunkt med kunden på
-            forhånd.
+            Velg dato når oppdraget skal gjennomføres. Dette vil bli synlig for
+            kunden.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+
+        <div className={cn("p-3", !selectedDate && "pb-0")}>
           <Calendar
             mode="single"
-            selected={date}
-            onSelect={setDate}
+            selected={selectedDate}
+            onSelect={setSelectedDate}
             locale={nb}
             disabled={(date) => date < new Date()}
             initialFocus
           />
-          <Textarea
-            placeholder="Legg til notater (valgfritt)"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
         </div>
+
         <DialogFooter>
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
+            disabled={isUpdating}
           >
             Avbryt
           </Button>
-          <Button onClick={handleSubmit} disabled={!date || isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Book tidspunkt
+          <Button
+            onClick={handleSchedule}
+            disabled={isUpdating || !selectedDate}
+          >
+            {isUpdating ? "Oppdaterer..." : "Lagre dato"}
           </Button>
         </DialogFooter>
       </DialogContent>

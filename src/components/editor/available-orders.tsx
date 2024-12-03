@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { acceptEditorOrder } from "@/app/actions/editor/accept-order";
 import { useEffect, useState } from "react";
 import { getAvailableEditorOrders } from "@/app/actions/editor/get-available-orders";
+import { useRouter } from "next/navigation";
 
 interface AvailableOrder {
   id: string;
@@ -34,6 +35,7 @@ interface AvailableOrder {
 
 function AcceptOrderButton({ orderId }: { orderId: string }) {
   const [isAccepting, setIsAccepting] = useState(false);
+  const router = useRouter();
 
   async function handleAcceptOrder() {
     if (isAccepting) return;
@@ -44,7 +46,7 @@ function AcceptOrderButton({ orderId }: { orderId: string }) {
 
       if (result.success) {
         toast.success("Oppdraget er nå ditt!");
-        window.location.href = "/editor";
+        router.push(`/editor/ordre/${orderId}`);
       } else {
         toast.error(result.error);
       }
@@ -143,7 +145,7 @@ export function AvailableEditorOrders() {
       try {
         const result = await getAvailableEditorOrders();
         if (result.success) {
-          setOrders(result.data.orders);
+          setOrders(result.data);
         }
       } catch (error) {
         console.error("Failed to load orders:", error);

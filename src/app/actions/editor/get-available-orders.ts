@@ -1,52 +1,32 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "../user/get-current-user";
 
 export async function getAvailableEditorOrders() {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getCurrentUser();
+    if (!user) {
       throw new Error("Unauthorized");
     }
 
-    // Get orders that are ready for editing
+    // Both superAdmin and editors can see available orders
     const orders = await prisma.order.findMany({
       where: {
         status: "EDITING",
-        editorId: null, // Not assigned to any editor
-        checklist: {
-          dropboxUrl: {
-            not: null, // Has uploaded media
-          },
-        },
+        editorId: null, // Only orders not assigned to an editor
       },
-      select: {
-        id: true,
-        orderDate: true,
-        location: true,
-        workspace: {
-          select: {
-            name: true,
-          },
-        },
-        photographer: {
-          select: {
-            name: true,
-          },
-        },
-        checklist: {
-          select: {
-            dropboxUrl: true,
-          },
-        },
+      include: {
+        workspace: true,
+        photographer: true,
+        checklist: true,
       },
       orderBy: {
-        editingStartedAt: "asc", // Show oldest first
+        uploadedAt: "desc",
       },
     });
 
-    return { success: true, data: { orders } };
+    return { success: true, data: orders };
   } catch (error) {
     console.error("Error in getAvailableEditorOrders:", error);
     return {

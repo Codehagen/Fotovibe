@@ -42,28 +42,64 @@ export async function createWorkspaceOrder(
 
     const validatedFields = createOrderSchema.parse(input);
 
-    // Create the order
-    const order = await prisma.order.create({
-      data: {
-        workspaceId,
-        status: OrderStatus.PENDING_PHOTOGRAPHER,
-        orderDate: new Date(),
-        scheduledDate: validatedFields.scheduledDate,
-        location: validatedFields.location,
-        requirements: validatedFields.requirements,
-        photoCount: validatedFields.photoCount,
-        videoCount: validatedFields.videoCount,
-      },
-    });
+    // Create order with checklists in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const newOrder = await tx.order.create({
+        data: {
+          workspaceId,
+          status: OrderStatus.PENDING_PHOTOGRAPHER,
+          orderDate: new Date(),
+          scheduledDate: validatedFields.scheduledDate,
+          location: validatedFields.location,
+          requirements: validatedFields.requirements,
+          photoCount: validatedFields.photoCount,
+          videoCount: validatedFields.videoCount,
+          // Create initial status history
+          statusHistory: {
+            create: {
+              status: OrderStatus.PENDING_PHOTOGRAPHER,
+              changedBy: userId,
+              notes: "Ordre opprettet av admin",
+            },
+          },
+          // Create photographer checklist
+          checklist: {
+            create: {
+              contactedAt: null,
+              scheduledAt: null,
+              dropboxUrl: null,
+              uploadedAt: null,
+              contactNotes: null,
+              schedulingNotes: null,
+              uploadNotes: null,
+            },
+          },
+          // Create editor checklist
+          EditorChecklist: {
+            create: {
+              editingStartedAt: null,
+              uploadedAt: null,
+              completedAt: null,
+              reviewUrl: null,
+            },
+          },
+        },
+        include: {
+          workspace: true,
+          photographer: true,
+          editor: true,
+          statusHistory: {
+            orderBy: {
+              createdAt: "desc",
+            },
+          },
+          checklist: true,
+          EditorChecklist: true,
+        },
+      });
 
-    // Create initial status history
-    await prisma.statusHistory.create({
-      data: {
-        orderId: order.id,
-        status: OrderStatus.PENDING_PHOTOGRAPHER,
-        changedBy: userId,
-        notes: "Ordre opprettet av admin",
-      },
+      return newOrder;
     });
 
     revalidatePath(`/admin/workspaces/${workspaceId}`);

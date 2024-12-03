@@ -31,10 +31,7 @@ interface DataTableProps {
   data: Order[];
 }
 
-export function DataTable({
-  columns,
-  data,
-}: DataTableProps) {
+export function DataTable({ columns, data }: DataTableProps) {
   const router = useRouter();
   const [sorting, setSorting] = React.useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
@@ -50,6 +47,14 @@ export function DataTable({
     getSortedRowModel: getSortedRowModel(),
     onColumnFiltersChange: setColumnFilters,
     getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      sorting: [
+        {
+          id: "orderDate",
+          desc: true,
+        },
+      ],
+    },
     state: {
       sorting,
       columnFilters,
