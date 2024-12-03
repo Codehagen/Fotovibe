@@ -1,57 +1,62 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "../user/get-current-user";
 
 export async function getMyEditorOrders() {
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    const user = await getCurrentUser();
+    if (!user) {
       throw new Error("Unauthorized");
     }
 
-    // Get editor profile
+    // If superAdmin, return all orders in EDITING status
+    if (user.isSuperUser) {
+      const orders = await prisma.order.findMany({
+        where: {
+          status: "EDITING",
+        },
+        include: {
+          workspace: true,
+          photographer: true,
+          editor: true,
+          checklist: true,
+          EditorChecklist: true,
+        },
+        orderBy: {
+          uploadedAt: "desc",
+        },
+      });
+
+      return { success: true, data: orders };
+    }
+
+    // For regular editors, check for editor profile
     const editor = await prisma.editor.findUnique({
-      where: { clerkId: userId },
-      select: { id: true },
+      where: { clerkId: user.id },
     });
 
     if (!editor) {
       throw new Error("Editor profile not found");
     }
 
-    // Get editor's orders
     const orders = await prisma.order.findMany({
       where: {
         editorId: editor.id,
       },
-      select: {
-        id: true,
-        orderDate: true,
-        location: true,
-        status: true,
-        workspace: {
-          select: {
-            name: true,
-          },
-        },
-        photographer: {
-          select: {
-            name: true,
-          },
-        },
-        checklist: {
-          select: {
-            dropboxUrl: true,
-          },
-        },
+      include: {
+        workspace: true,
+        photographer: true,
+        editor: true,
+        checklist: true,
+        EditorChecklist: true,
       },
       orderBy: {
-        editingStartedAt: "desc",
+        uploadedAt: "desc",
       },
     });
 
-    return { success: true, data: { orders } };
+    return { success: true, data: orders };
   } catch (error) {
     console.error("Error in getMyEditorOrders:", error);
     return {

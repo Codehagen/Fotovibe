@@ -1,28 +1,21 @@
 "use client";
 
-import { DataTable } from "@/components/tables/admin/data-table";
+import { useEffect, useState } from "react";
+import { getMyEditorOrders } from "@/app/actions/editor/get-my-orders";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Calendar,
-  MapPin,
-  Building2,
-  Eye,
-  Link as LinkIcon,
-} from "lucide-react";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
-import { type ColumnDef } from "@tanstack/react-table";
-import { Badge } from "@/components/ui/badge";
-import { OrderStatus } from "@prisma/client";
-import { cn } from "@/lib/utils";
-import { getMyEditorOrders } from "@/app/actions/editor/get-my-orders";
-import { useEffect, useState } from "react";
+import { Link as LinkIcon } from "lucide-react";
+import Link from "next/link";
+import { EditorSetup } from "./editor-setup";
 
-interface EditorOrder {
+interface Order {
   id: string;
   orderDate: Date;
   location: string;
-  status: OrderStatus;
+  status: string;
   workspace: {
     name: string;
   };
@@ -32,108 +25,119 @@ interface EditorOrder {
   checklist: {
     dropboxUrl: string | null;
   };
+  EditorChecklist: {
+    reviewUrl: string | null;
+  };
 }
 
-const columns: ColumnDef<EditorOrder>[] = [
-  {
-    accessorKey: "orderDate",
-    header: "Dato",
-    cell: ({ row }) => {
-      const date = new Date(row.getValue("orderDate"));
-      return (
-        <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>{format(date, "PPP", { locale: nb })}</span>
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "location",
-    header: "Lokasjon",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <MapPin className="h-4 w-4 text-muted-foreground" />
-        <span>{row.getValue("location")}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "workspace.name",
-    header: "Kunde",
-    cell: ({ row }) => (
-      <div className="flex items-center gap-2">
-        <Building2 className="h-4 w-4 text-muted-foreground" />
-        <span>{row.original.workspace.name}</span>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "photographer.name",
-    header: "Fotograf",
-    cell: ({ row }) => row.original.photographer.name,
-  },
-  {
-    accessorKey: "checklist.dropboxUrl",
-    header: "Media",
-    cell: ({ row }) => (
-      <a
-        href={row.original.checklist.dropboxUrl!}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-2 text-blue-600 hover:underline"
-      >
-        <LinkIcon className="h-4 w-4" />
-        Åpne i Dropbox
-      </a>
-    ),
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() =>
-            (window.location.href = `/editor/ordre/${row.original.id}`)
-          }
-        >
-          <Eye className="mr-2 h-4 w-4" />
-          Se ordre
-        </Button>
-      );
-    },
-  },
-];
-
 export function MyEditorOrders() {
-  const [orders, setOrders] = useState<EditorOrder[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function loadOrders() {
+    async function fetchOrders() {
       try {
-        const result = await getMyEditorOrders();
-        if (result.success) {
-          setOrders(result.data.orders);
+        const response = await getMyEditorOrders();
+        if (response.success) {
+          setOrders(response.data);
+        } else {
+          setError(response.error);
         }
       } catch (error) {
-        console.error("Failed to load orders:", error);
+        setError(
+          error instanceof Error ? error.message : "Failed to fetch orders"
+        );
       } finally {
         setIsLoading(false);
       }
     }
 
-    loadOrders();
+    fetchOrders();
   }, []);
 
+  if (error === "Editor profile not found") {
+    return <EditorSetup userId="your-user-id" />;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (orders.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Ingen aktive oppdrag</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">
+            Du har ingen oppdrag under arbeid for øyeblikket.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <DataTable
-      columns={columns}
-      data={orders}
-      searchKey="location"
-      searchPlaceholder="Søk etter lokasjon..."
-    />
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {orders.map((order) => (
+        <Card key={order.id}>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">
+                {order.workspace.name}
+              </CardTitle>
+              <Badge variant="outline">{order.status}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Fotograf</span>
+                  <span>{order.photographer?.name || "Ikke tildelt"}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Lokasjon</span>
+                  <span>{order.location}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Dato</span>
+                  <span>
+                    {format(new Date(order.orderDate), "PPP", {
+                      locale: nb,
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2">
+                {order.checklist?.dropboxUrl && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a
+                      href={order.checklist.dropboxUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2"
+                    >
+                      <LinkIcon className="h-4 w-4" />
+                      Åpne i Dropbox
+                    </a>
+                  </Button>
+                )}
+                <Button asChild>
+                  <Link href={`/editor/ordre/${order.id}`}>Se detaljer</Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
   );
 }

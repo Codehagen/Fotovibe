@@ -126,4 +126,4 @@ export const columns: ColumnDef<AdminOrder>[] = [
       </Button>
     ),
   },
-]; 
+];

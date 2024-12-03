@@ -7,7 +7,6 @@ import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import { UpdateOrderStatus } from "@/components/photographer/update-order-status";
 import { OrderTimeline } from "@/components/photographer/order-timeline";
-import { OrderRequirements } from "@/components/photographer/order-requirements";
 import { prisma } from "@/lib/db";
 import {
   Building2,
@@ -21,10 +20,14 @@ import {
   FileText,
   AlertCircle,
   CalendarDays,
+  Edit,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { EmptyPlaceholder } from "@/components/empty-placeholder";
 import { LucideIcon } from "lucide-react";
+import { OrderChecklist } from "@/components/photographer/order-checklist";
+import { Button } from "@/components/ui/button";
+import { LinkIcon } from "lucide-react";
 
 interface OrderPageProps {
   params: {
@@ -61,6 +64,7 @@ export default async function OrderPage({ params }: OrderPageProps) {
   if (!user) redirect("/sign-in");
 
   const { success, data: order, error } = await getOrder(params.id);
+  console.log(order);
 
   if (!success || !order) {
     return <div>Error: {error}</div>;
@@ -85,13 +89,17 @@ export default async function OrderPage({ params }: OrderPageProps) {
     },
   });
 
-  // Get or create checklist
+  // Get or create checklist with all fields
   const checklist = (await prisma.orderChecklist.findUnique({
     where: { orderId: order.id },
   })) || {
     contactedAt: null,
     scheduledAt: null,
     dropboxUrl: null,
+    uploadedAt: null,
+    contactNotes: null,
+    schedulingNotes: null,
+    uploadNotes: null,
   };
 
   // Show empty state if no scheduled date
@@ -104,7 +112,7 @@ export default async function OrderPage({ params }: OrderPageProps) {
           <EmptyPlaceholder.Description>
             Du må velge en dato for fotografering før du kan se flere detaljer.
           </EmptyPlaceholder.Description>
-          <OrderRequirements
+          <OrderChecklist
             requirements={order.requirements}
             orderId={order.id}
             checklist={checklist}
@@ -318,22 +326,35 @@ export default async function OrderPage({ params }: OrderPageProps) {
         </div>
 
         <div className="space-y-4">
-          {order.requirements ? (
-            <OrderRequirements
+          {order.status === "IN_PROGRESS" ? (
+            <OrderChecklist
               requirements={order.requirements}
               orderId={order.id}
-              checklist={checklist}
+              checklist={order.checklist}
             />
-          ) : (
+          ) : order.status === "EDITING" ? (
             <EmptyPlaceholder>
-              <EmptyPlaceholder.Icon icon={FileText} />
-              <EmptyPlaceholder.Title>Ingen krav</EmptyPlaceholder.Title>
+              <EmptyPlaceholder.Icon icon={Edit} />
+              <EmptyPlaceholder.Title>Under redigering</EmptyPlaceholder.Title>
               <EmptyPlaceholder.Description>
-                Det er ikke lagt til noen spesielle krav for dette oppdraget.
+                Oppdraget er nå sendt til redigering. Du vil få beskjed når
+                bildene er klare for gjennomgang.
               </EmptyPlaceholder.Description>
+              {order.checklist?.dropboxUrl && (
+                <Button variant="outline" asChild>
+                  <a
+                    href={order.checklist.dropboxUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                    Åpne i Dropbox
+                  </a>
+                </Button>
+              )}
             </EmptyPlaceholder>
-          )}
-
+          ) : null}
           <OrderTimeline order={order} />
         </div>
       </div>

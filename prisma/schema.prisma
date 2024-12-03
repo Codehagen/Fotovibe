@@ -43,6 +43,7 @@ model Photographer {
   bio       String?
   language  String?  @default("english")
   clerkId   String?  @unique
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now()) @map(name: "created_at")
   updatedAt DateTime @default(now()) @map(name: "updated_at")
 

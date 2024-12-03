@@ -1,109 +1,100 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "../user/get-current-user";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { OrderStatus } from "@prisma/client";
 
 const createOrderSchema = z.object({
-  photographerId: z.string().min(1, "Photographer is required"),
-  scheduledDate: z.string().min(1, "Date is required"),
-  location: z.string().min(1, "Location is required"),
+  workspaceId: z.string(),
+  photographerId: z.string().optional(),
+  location: z.string(),
+  scheduledDate: z.string(),
   requirements: z.string().optional(),
-  photoCount: z.number().min(0).optional(),
-  videoCount: z.number().min(0).optional(),
+  photoCount: z.number().optional(),
+  videoCount: z.number().optional(),
 });
 
 export async function createOrder(input: z.infer<typeof createOrderSchema>) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized: No user found");
+    const user = await getCurrentUser();
+    if (!user?.isSuperUser) {
+      return {
+        success: false,
+        error: "Unauthorized",
+      };
     }
 
-    // Get user's workspace
-    const userWorkspace = await prisma.user.findFirst({
-      where: { id: userId },
-      select: {
-        workspaces: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-
-    if (!userWorkspace?.workspaces[0]?.id) {
-      throw new Error("No workspace found for user");
-    }
-
-    const workspaceId = userWorkspace.workspaces[0].id;
     const validatedFields = createOrderSchema.parse(input);
 
-    // Create the order with all fields that would be set by a cron job
-    const order = await prisma.order.create({
-      data: {
-        photographerId: validatedFields.photographerId,
-        workspaceId: workspaceId,
-        scheduledDate: new Date(validatedFields.scheduledDate),
-        location: validatedFields.location,
-        requirements: validatedFields.requirements || null,
-        photoCount: validatedFields.photoCount || 0,
-        videoCount: validatedFields.videoCount || 0,
-        status: "NOT_STARTED" as OrderStatus,
-        orderDate: new Date(),
-        editorId: null,
-        startedAt: null,
-        editingStartedAt: null,
-        reviewStartedAt: null,
-        completedAt: null,
-        cancelReason: null,
-        deliveryDate: null
-      },
-      // Include related data in the response
-      include: {
-        photographer: {
-          select: {
-            name: true,
+    // Create order with checklists in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      // Create the order
+      const newOrder = await tx.order.create({
+        data: {
+          workspaceId: validatedFields.workspaceId,
+          photographerId: validatedFields.photographerId,
+          status: "PENDING_PHOTOGRAPHER",
+          orderDate: new Date(),
+          scheduledDate: new Date(validatedFields.scheduledDate),
+          location: validatedFields.location,
+          requirements: validatedFields.requirements,
+          photoCount: validatedFields.photoCount,
+          videoCount: validatedFields.videoCount,
+          // Create initial status history
+          statusHistory: {
+            create: {
+              status: "PENDING_PHOTOGRAPHER",
+              changedBy: user.id,
+              notes: "Ordre opprettet av admin",
+            },
+          },
+          // Create photographer checklist
+          checklist: {
+            create: {
+              contactedAt: null,
+              scheduledAt: null,
+              dropboxUrl: null,
+              uploadedAt: null,
+              contactNotes: null,
+              schedulingNotes: null,
+              uploadNotes: null,
+            },
+          },
+          // Create editor checklist
+          EditorChecklist: {
+            create: {
+              editingStartedAt: null,
+              uploadedAt: null,
+              completedAt: null,
+              reviewUrl: null,
+            },
           },
         },
-        editor: {
-          select: {
-            name: true,
+        include: {
+          workspace: true,
+          photographer: true,
+          editor: true,
+          statusHistory: {
+            orderBy: {
+              createdAt: "desc",
+            },
           },
+          checklist: true,
+          EditorChecklist: true,
         },
-        workspace: {
-          select: {
-            name: true,
-          },
-        },
-      },
+      });
+
+      return newOrder;
     });
 
-    // Create initial status history entry
-    await prisma.statusHistory.create({
-      data: {
-        orderId: order.id,
-        status: "NOT_STARTED",
-        changedBy: userId,
-        notes: "Order created",
-      },
-    });
-
-    revalidatePath("/ordre");
-    return { success: true, order };
+    revalidatePath("/admin");
+    return { success: true, data: order };
   } catch (error) {
-    console.error("Error in createOrder:", error);
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors };
-    }
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
+    console.error("Error creating order:", error);
     return {
       success: false,
-      error: "An unexpected error occurred while creating the order",
+      error: error instanceof Error ? error.message : "Failed to create order",
     };
   }
 }

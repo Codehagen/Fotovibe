@@ -29,6 +29,7 @@ interface AcceptOrderButtonProps {
 
 function AcceptOrderButton({ orderId }: AcceptOrderButtonProps) {
   const [isAccepting, setIsAccepting] = useState(false);
+  const router = useRouter();
 
   async function handleAcceptOrder() {
     if (isAccepting) return;
@@ -39,7 +40,7 @@ function AcceptOrderButton({ orderId }: AcceptOrderButtonProps) {
 
       if (result.success) {
         toast.success("Oppdraget er nå ditt!");
-        window.location.href = "/fotograf";
+        router.push(`/fotograf/ordre/${orderId}`);
       } else {
         toast.error(result.error);
       }

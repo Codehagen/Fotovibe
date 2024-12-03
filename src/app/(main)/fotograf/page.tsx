@@ -15,6 +15,7 @@ export default async function PhotographerPage() {
   if (!user) redirect("/sign-in");
 
   const { success, data: stats } = await getPhotographerStats();
+  console.log(stats);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">

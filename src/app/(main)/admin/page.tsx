@@ -65,6 +65,12 @@ import { CreateWorkspaceDialog } from "@/components/admin/create-workspace-dialo
 // import { RecentActivities } from "@/components/admin/recent-activities";
 // import { PhotographerPerformance } from "@/components/admin/photographer-performance";
 // import { EditorPerformance } from "@/components/admin/editor-performance";
+import { getPhotographers } from "@/app/actions/admin/get-photographers";
+import { PhotographersTable } from "@/components/admin/photographers-table";
+import { CreatePhotographerDialog } from "@/components/admin/create-photographer-dialog";
+import { getEditors } from "@/app/actions/admin/get-editors";
+import { EditorsTable } from "@/components/admin/editors-table";
+import { CreateEditorDialog } from "@/components/admin/create-editor-dialog";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
@@ -73,6 +79,11 @@ export default async function AdminPage() {
 
   const { success: workspacesSuccess, data: workspacesData } =
     await getWorkspaces();
+
+  const { success: photographersSuccess, data: photographersData } =
+    await getPhotographers();
+
+  const { success: editorsSuccess, data: editorsData } = await getEditors();
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -204,14 +215,24 @@ export default async function AdminPage() {
 
         <TabsContent value="photographers" className="space-y-4">
           <div className="flex justify-end">
-            <Button asChild>
-              <Link href="/admin/photographers/new">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ny fotograf
-              </Link>
-            </Button>
+            <CreatePhotographerDialog />
           </div>
-          {/* PhotographersTable component will go here */}
+          {photographersSuccess && photographersData ? (
+            <PhotographersTable data={photographersData.photographers} />
+          ) : (
+            <div>Error loading photographers</div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="editors" className="space-y-4">
+          <div className="flex justify-end">
+            <CreateEditorDialog />
+          </div>
+          {editorsSuccess && editorsData ? (
+            <EditorsTable data={editorsData.editors} />
+          ) : (
+            <div>Error loading editors</div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

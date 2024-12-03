@@ -26,11 +26,50 @@ async function main() {
     console.log(`Created/Updated country: ${created.name}`);
   }
 
-  // Create zones for Norway
+  // Update existing workspaces without a country
+  console.log("Updating workspaces without country...");
+
   const norway = await prisma.country.findUnique({
     where: { code: "NO" },
   });
 
+  if (norway) {
+    try {
+      // Get all workspaces
+      const allWorkspaces = await prisma.workspace.findMany({
+        select: {
+          id: true,
+          country: true,
+        },
+      });
+
+      // Filter workspaces without a valid country
+      const workspacesNeedingUpdate = allWorkspaces.filter(
+        (workspace) => !workspace.country
+      );
+
+      if (workspacesNeedingUpdate.length > 0) {
+        // Update each workspace individually
+        const updatePromises = workspacesNeedingUpdate.map((workspace) =>
+          prisma.workspace.update({
+            where: { id: workspace.id },
+            data: { countryId: norway.id },
+          })
+        );
+
+        await Promise.all(updatePromises);
+        console.log(
+          `Updated ${workspacesNeedingUpdate.length} workspaces with default country (Norge)`
+        );
+      } else {
+        console.log("No workspaces found needing country update");
+      }
+    } catch (error) {
+      console.error("Error updating workspaces:", error);
+    }
+  }
+
+  // Create zones for Norway
   if (norway) {
     console.log("Creating zones for Norway...");
 

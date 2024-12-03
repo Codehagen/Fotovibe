@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { OrderStatus } from "@prisma/client";
 
 interface UpdateChecklistInput {
-  type: "contact" | "schedule" | "dropbox";
+  type: "contact" | "schedule" | "dropbox" | "complete";
   dropboxUrl?: string;
   notes?: string;
   scheduledDate?: Date;
@@ -91,6 +91,27 @@ export async function updateOrderChecklist(
                 status: order.status,
                 changedBy: userId,
                 notes: `Fotograf har booket tidspunkt: ${input.notes}`,
+              },
+            }),
+          ]
+        : []),
+
+      // If completing the order, update order status to EDITING
+      ...(input.type === "complete"
+        ? [
+            prisma.order.update({
+              where: { id: orderId },
+              data: {
+                status: "EDITING",
+                editingStartedAt: new Date(),
+              },
+            }),
+            prisma.statusHistory.create({
+              data: {
+                orderId,
+                status: "EDITING",
+                changedBy: userId,
+                notes: "Fotograf har fullført oppdraget. Sendt til redigering.",
               },
             }),
           ]

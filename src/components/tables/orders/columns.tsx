@@ -1,7 +1,7 @@
 "use client";
 
 import { ColumnDef } from "@tanstack/react-table";
-import { format } from "date-fns";
+import { format, addMonths } from "date-fns";
 import { nb } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
   PhoneCall,
   Upload,
   Edit,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -27,14 +28,22 @@ export interface Order {
   id: string;
   status: OrderStatus;
   location: string;
+  orderDate: Date;
+  scheduledDate: Date;
+  photoCount: number;
+  videoCount: number;
   photographer: {
     name: string | null;
   } | null;
   workspace: {
     name: string;
+    maxUsers?: number;
+    subscriptions?: {
+      package: string;
+      startDate: Date;
+      endDate: Date | null;
+    }[];
   };
-  orderDate: Date;
-  scheduledDate: Date;
   checklist?: {
     contactedAt: Date | null;
     scheduledAt: Date | null;
@@ -90,69 +99,64 @@ const orderStatusMap: Record<
 export const columns: ColumnDef<Order>[] = [
   {
     accessorKey: "orderDate",
-    header: "Opprettet",
+    header: "Periode",
     cell: ({ row }) => {
-      const date = new Date(row.getValue("orderDate"));
+      const startDate = new Date(row.getValue("orderDate"));
+      const endDate = addMonths(startDate, 1);
+
       return (
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span>
-            {format(date, "PPP", {
-              locale: nb,
-            })}
+            {format(startDate, "LLLL", { locale: nb }).replace(/^\w/, (c) =>
+              c.toUpperCase()
+            )}
+            {" - "}
+            {format(endDate, "LLLL", { locale: nb }).replace(/^\w/, (c) =>
+              c.toUpperCase()
+            )}
+          </span>
+        </div>
+      );
+    },
+    sortingFn: (rowA, rowB) => {
+      const a = new Date(rowA.getValue("orderDate"));
+      const b = new Date(rowB.getValue("orderDate"));
+      return b.getTime() - a.getTime(); // Descending order
+    },
+  },
+  {
+    accessorKey: "scheduledDate",
+    header: "Dato",
+    cell: ({ row }) => {
+      const date = row.getValue("scheduledDate") as Date | null;
+      return (
+        <div className="flex items-center gap-2">
+          <Clock className="h-4 w-4 text-muted-foreground" />
+          <span>
+            {date
+              ? format(new Date(date), "PPP", { locale: nb })
+              : "Ikke planlagt"}
           </span>
         </div>
       );
     },
   },
   {
-    accessorKey: "scheduledDate",
-    header: "Planlagt",
+    id: "mediaCount",
+    header: "Antall",
     cell: ({ row }) => {
-      const date = row.getValue("scheduledDate") as Date | null;
-      const checklist = row.original.checklist;
-
-      if (!date) {
-        return (
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Ikke planlagt</span>
-          </div>
-        );
-      }
-
-      const isRescheduled =
-        checklist?.scheduledAt &&
-        new Date(checklist.scheduledAt).getTime() !== new Date(date).getTime();
-
-      if (isRescheduled) {
-        console.log("Row:", row.original.id);
-        console.log("Original date:", new Date(date));
-        console.log("Checklist date:", new Date(checklist?.scheduledAt!));
-      }
-
+      const photos = row.original.photoCount;
+      const videos = row.original.videoCount;
       return (
-        <div className="flex items-center gap-2">
-          <Clock
-            className={cn(
-              "h-4 w-4",
-              isRescheduled ? "text-orange-500" : "text-muted-foreground"
-            )}
-          />
-          <div className="flex flex-col">
-            <span>
-              {format(new Date(date), "PPP", {
-                locale: nb,
-              })}
-            </span>
-            {isRescheduled && (
-              <span className="text-xs text-orange-500">
-                Endret til:{" "}
-                {format(new Date(checklist.scheduledAt!), "PPP", {
-                  locale: nb,
-                })}
-              </span>
-            )}
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Camera className="h-4 w-4 text-muted-foreground" />
+            <span>{photos}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Video className="h-4 w-4 text-muted-foreground" />
+            <span>{videos}</span>
           </div>
         </div>
       );

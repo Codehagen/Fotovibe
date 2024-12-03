@@ -18,6 +18,7 @@ export default async function ReviewOrderPage({
   if (!user) redirect("/sign-in");
 
   const { success, data: order, error } = await getOrder(params.id);
+  console.log(order);
 
   if (!success || !order) {
     return <div>Error: {error}</div>;

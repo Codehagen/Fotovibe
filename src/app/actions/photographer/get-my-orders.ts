@@ -11,7 +11,6 @@ export async function getMyOrders(type: "active" | "completed") {
       throw new Error("Unauthorized");
     }
 
-    // Get photographer profile
     const photographer = await prisma.photographer.findUnique({
       where: { clerkId: userId },
       select: { id: true },
@@ -21,7 +20,6 @@ export async function getMyOrders(type: "active" | "completed") {
       throw new Error("Photographer profile not found");
     }
 
-    // Get orders based on type
     const orders = await prisma.order.findMany({
       where: {
         photographerId: photographer.id,
@@ -40,11 +38,34 @@ export async function getMyOrders(type: "active" | "completed") {
       select: {
         id: true,
         orderDate: true,
+        scheduledDate: true,
         location: true,
         status: true,
+        photoCount: true,
+        videoCount: true,
+        photographer: {
+          select: {
+            name: true,
+          },
+        },
         workspace: {
           select: {
             name: true,
+            maxUsers: true,
+            subscriptions: {
+              select: {
+                package: true,
+                startDate: true,
+                endDate: true,
+              },
+            },
+          },
+        },
+        checklist: {
+          select: {
+            contactedAt: true,
+            scheduledAt: true,
+            dropboxUrl: true,
           },
         },
       },

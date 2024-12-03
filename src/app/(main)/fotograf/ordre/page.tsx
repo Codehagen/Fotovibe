@@ -28,12 +28,12 @@ export default async function OrdersPage() {
             Her er en oversikt over alle dine ordre
           </p>
         </div>
-        <Button asChild>
+        {/* <Button asChild>
           <Link href="/ordre/ny">
             <PlusCircle className="mr-2 h-4 w-4" />
             Ny ordre
           </Link>
-        </Button>
+        </Button> */}
       </div>
 
       {data.orders.length === 0 ? (
