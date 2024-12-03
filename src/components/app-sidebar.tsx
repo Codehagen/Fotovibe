@@ -141,7 +141,7 @@ const getAllNavItems = (): NavItem[] => {
     },
     {
       title: "Faktura",
-      url: "/billing",
+      url: "/invoices",
       icon: CreditCard,
       roleLabel: "USER",
     },
