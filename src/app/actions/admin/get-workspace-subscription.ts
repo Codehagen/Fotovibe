@@ -5,18 +5,10 @@ import { auth } from "@clerk/nextjs/server";
 
 interface SubscriptionResponse {
   subscription: {
-    id: string;
-    status: string;
-    startDate: Date;
-    nextBillingDate: Date;
-    pausedAt: Date | null;
-    cancelledAt: Date | null;
-    plan: {
-      id: string;
-      name: string;
-      price: number;
-      currency: string;
-    };
+    name: string;
+    package: "basic" | "premium" | "enterprise";
+    amount: number;
+    isActive: boolean;
   } | null;
   usage: {
     photosUsed: number;
@@ -59,22 +51,9 @@ export async function getWorkspaceSubscription(workspaceId: string): Promise<{
     }
 
     // Get active subscription
-    const subscription = await prisma.subscription.findFirst({
+    const subscription = await prisma.subscription.findUnique({
       where: {
         workspaceId,
-      },
-      include: {
-        plan: {
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            currency: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
       },
     });
     console.log("Found subscription:", subscription);
@@ -119,7 +98,17 @@ export async function getWorkspaceSubscription(workspaceId: string): Promise<{
     return {
       success: true,
       data: {
-        subscription,
+        subscription: subscription
+          ? {
+              name: subscription.name,
+              package: subscription.package as
+                | "basic"
+                | "premium"
+                | "enterprise",
+              amount: subscription.amount,
+              isActive: subscription.isActive,
+            }
+          : null,
         usage: {
           photosUsed: usage._sum.photoCount || 0,
           videosUsed: usage._sum.videoCount || 0,

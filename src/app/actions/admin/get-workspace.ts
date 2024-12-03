@@ -29,9 +29,14 @@ export async function getWorkspace(id: string) {
             orders: true,
           },
         },
+        orders: {
+          select: {
+            status: true,
+          },
+        },
         subscriptions: {
-          include: {
-            plan: true,
+          where: {
+            isActive: true,
           },
           orderBy: {
             startDate: "desc",
@@ -42,7 +47,7 @@ export async function getWorkspace(id: string) {
           orderBy: {
             dueDate: "desc",
           },
-          take: 12, // Last 12 months
+          take: 12,
         },
       },
     });
@@ -51,7 +56,30 @@ export async function getWorkspace(id: string) {
       throw new Error("Workspace not found");
     }
 
-    return { success: true, data: workspace };
+    // Calculate order counts
+    const activeOrders =
+      workspace?.orders.filter(
+        (order) =>
+          order.status !== "COMPLETED" &&
+          order.status !== "CANCELLED" &&
+          order.status !== "PENDING_PHOTOGRAPHER"
+      ).length || 0;
+
+    const completedOrders =
+      workspace?.orders.filter((order) => order.status === "COMPLETED")
+        .length || 0;
+
+    return {
+      success: true,
+      data: {
+        ...workspace,
+        _count: {
+          ...workspace._count,
+          activeOrders,
+          completedOrders,
+        },
+      },
+    };
   } catch (error) {
     console.error("Error in getWorkspace:", error);
     return {

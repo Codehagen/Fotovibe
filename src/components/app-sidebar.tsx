@@ -148,8 +148,14 @@ const getAllNavItems = (): NavItem[] => {
     },
     // Admin items
     {
-      title: "Team",
-      url: "/team",
+      title: "Admin",
+      url: "/admin",
+      icon: Users,
+      roleLabel: "ADMIN",
+    },
+    {
+      title: "Ordre",
+      url: "/admin/orders",
       icon: Users,
       roleLabel: "ADMIN",
     },

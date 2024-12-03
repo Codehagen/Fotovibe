@@ -6,16 +6,22 @@ import { nb } from "date-fns/locale";
 import {
   CheckCircle2,
   Clock,
-  Play,
-  XCircle,
-  Calendar,
-  PhoneCall,
-  Link as LinkIcon,
-  Camera,
   Upload,
+  Camera,
   Edit,
+  Eye,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+interface TimelineEvent {
+  date: Date;
+  icon: LucideIcon;
+  iconColor?: string;
+  dotColor?: string;
+  title: string;
+  description?: string;
+}
 
 interface OrderTimelineProps {
   order: {
@@ -33,97 +39,58 @@ interface OrderTimelineProps {
       scheduledAt: Date | null;
       dropboxUrl: string | null;
       uploadedAt: Date | null;
-    } | null;
+    };
     EditorChecklist?: {
       editingStartedAt: Date | null;
       uploadedAt: Date | null;
       completedAt: Date | null;
-    } | null;
+      reviewUrl: string | null;
+    };
   };
 }
 
 export function OrderTimeline({ order }: OrderTimelineProps) {
-  // Combine status history with checklist events
-  const timelineEvents = [
+  const events: TimelineEvent[] = [
     // Order created
     {
       date: order.orderDate,
-      icon: Calendar,
+      icon: Clock,
       iconColor: "text-blue-500",
       dotColor: "bg-blue-500",
       title: "Ordre opprettet",
-      description: "Venter på fotograf",
     },
-    // Customer contacted
+    // Contact and scheduling
     ...(order.checklist?.contactedAt
       ? [
           {
             date: order.checklist.contactedAt,
-            icon: PhoneCall,
-            iconColor: "text-green-500",
-            dotColor: "bg-green-500",
+            icon: Clock,
+            iconColor: "text-blue-500",
+            dotColor: "bg-blue-500",
             title: "Kunde kontaktet",
-            description: "Fotograf har tatt kontakt med kunden",
           },
         ]
       : []),
-    // Time scheduled
     ...(order.checklist?.scheduledAt
       ? [
           {
-            date: order.checklist.contactedAt || new Date(),
-            icon: Calendar,
-            iconColor: "text-green-500",
-            dotColor: "bg-green-500",
-            title: "Tidspunkt booket",
-            description: `Booket ${format(
-              new Date(order.checklist.contactedAt || new Date()),
-              "PPP",
-              { locale: nb }
-            )} for fotografering ${format(
-              new Date(order.checklist.scheduledAt),
-              "PPP",
-              { locale: nb }
-            )}`,
-          },
-        ]
-      : []),
-    // Shooting started
-    ...(order.startedAt
-      ? [
-          {
-            date: order.startedAt,
+            date: order.checklist.scheduledAt,
             icon: Camera,
             iconColor: "text-blue-500",
             dotColor: "bg-blue-500",
-            title: "Fotografering startet",
-            description: "Fotograf har startet oppdraget",
+            title: "Tidspunkt booket",
           },
         ]
       : []),
-    // Media uploaded
-    ...(order.checklist?.dropboxUrl
+    // Media upload
+    ...(order.checklist?.uploadedAt
       ? [
           {
-            date: order.uploadedAt || new Date(),
+            date: order.checklist.uploadedAt,
             icon: Upload,
             iconColor: "text-green-500",
             dotColor: "bg-green-500",
             title: "Media lastet opp",
-            description: "Fotograf har lastet opp bildene/videoene",
-          },
-        ]
-      : []),
-    // Media received
-    ...(order.checklist?.dropboxUrl
-      ? [
-          {
-            date: order.checklist.uploadedAt || new Date(),
-            icon: Upload,
-            iconColor: "text-blue-500",
-            dotColor: "bg-blue-500",
-            title: "Mottatt bilder",
-            description: "Fotograf har lastet opp materialet",
           },
         ]
       : []),
@@ -136,51 +103,34 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
             iconColor: "text-orange-500",
             dotColor: "bg-orange-500",
             title: "Redigering startet",
-            description: "Editor har startet redigering",
           },
         ]
       : []),
-    // Editor uploaded
+    // Editor upload
     ...(order.EditorChecklist?.uploadedAt
       ? [
           {
             date: order.EditorChecklist.uploadedAt,
             icon: Upload,
-            iconColor: "text-green-500",
-            dotColor: "bg-green-500",
+            iconColor: "text-orange-500",
+            dotColor: "bg-orange-500",
             title: "Redigerte filer lastet opp",
-            description: "Editor har lastet opp redigerte filer",
-          },
-        ]
-      : []),
-    // Editor completed
-    ...(order.EditorChecklist?.completedAt
-      ? [
-          {
-            date: order.EditorChecklist.completedAt,
-            icon: CheckCircle2,
-            iconColor: "text-green-500",
-            dotColor: "bg-green-500",
-            title: "Sendt til gjennomgang",
-            description: "Editor har sendt oppdraget til gjennomgang",
           },
         ]
       : []),
     // Ready for review
-    ...(order.EditorChecklist?.reviewUrl
+    ...(order.EditorChecklist?.reviewUrl && order.EditorChecklist?.completedAt
       ? [
           {
-            date: order.completedAt || new Date(),
-            icon: CheckCircle2,
-            iconColor: "text-green-500",
-            dotColor: "bg-green-500",
-            title: "Klar for gjennomgang",
-            description:
-              "Editor har markert oppdraget som klart for gjennomgang",
+            date: order.EditorChecklist.completedAt,
+            icon: Eye,
+            iconColor: "text-purple-500",
+            dotColor: "bg-purple-500",
+            title: "Sendt til gjennomgang",
           },
         ]
       : []),
-    // Order completed
+    // Completed
     ...(order.completedAt
       ? [
           {
@@ -188,12 +138,11 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
             icon: CheckCircle2,
             iconColor: "text-green-500",
             dotColor: "bg-green-500",
-            title: "Oppdrag fullført",
-            description: "Alt materiale er ferdig redigert og levert",
+            title: "Ordre fullført",
           },
         ]
       : []),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+  ].sort((a, b) => a.date.getTime() - b.date.getTime());
 
   return (
     <Card>
@@ -201,23 +150,43 @@ export function OrderTimeline({ order }: OrderTimelineProps) {
         <CardTitle>Tidslinje</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-8">
-          {timelineEvents.map((event, index) => (
-            <div key={index} className="flex gap-4">
+        <div className="relative ml-3">
+          {events.map((event, index) => (
+            <div
+              key={index}
+              className={cn(
+                "mb-8 flex items-center last:mb-0",
+                index === events.length - 1 && "opacity-100",
+                index !== events.length - 1 && "opacity-70"
+              )}
+            >
               <div
-                className={cn("mt-1 h-2 w-2 rounded-full", event.dotColor)}
+                className={cn(
+                  "absolute left-0 h-full w-0.5 bg-muted",
+                  index === events.length - 1 ? "h-3" : "h-full"
+                )}
               />
-              <div className="space-y-1">
+              <div
+                className={cn(
+                  "absolute left-0 z-10 -ml-1 h-2 w-2 rounded-full",
+                  event.dotColor || "bg-primary"
+                )}
+              />
+              <div className="flex-1 pl-4">
                 <div className="flex items-center gap-2">
-                  <event.icon className={cn("h-4 w-4", event.iconColor)} />
+                  <event.icon
+                    className={cn("h-4 w-4", event.iconColor || "text-primary")}
+                  />
                   <p className="text-sm font-medium">{event.title}</p>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {event.description}
+                  {format(event.date, "PPP", { locale: nb })}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {format(event.date, "PPP HH:mm", { locale: nb })}
-                </p>
+                {event.description && (
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {event.description}
+                  </p>
+                )}
               </div>
             </div>
           ))}

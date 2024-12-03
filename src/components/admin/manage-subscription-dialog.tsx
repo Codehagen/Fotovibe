@@ -2,26 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from "@/components/ui/form";
 import {
   Select,
@@ -31,100 +28,104 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import * as z from "zod";
+import { toast } from "sonner";
 import { updateSubscription } from "@/app/actions/admin/update-subscription";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
-import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
+
+const subscriptionPackages = {
+  basic: {
+    name: "Basic",
+    basePrice: 10000,
+    description: "Grunnpakke for mindre bedrifter",
+  },
+  premium: {
+    name: "Premium",
+    basePrice: 15000,
+    description: "Utvidet pakke med flere tjenester",
+  },
+  enterprise: {
+    name: "Enterprise",
+    basePrice: 25000,
+    description: "Skreddersydd løsning for store bedrifter",
+  },
+} as const;
 
 const formSchema = z.object({
-  planId: z.string(),
-  status: z.enum(["ACTIVE", "PAUSED", "CANCELLED"]),
-  price: z.number().min(0, "Price must be positive"),
-  nextBillingDate: z.string(),
-  autoRenew: z.boolean(),
+  name: z.string().min(1, "Navn er påkrevd"),
+  package: z.enum(["basic", "premium", "enterprise"]),
+  customAmount: z.number().optional(),
+  isActive: z.boolean(),
 });
 
 interface ManageSubscriptionDialogProps {
-  workspace: {
-    id: string;
-    subscriptions?: Array<{
-      id: string;
-      status: string;
-      plan: {
-        id: string;
-        name: string;
-        photosPerMonth: number;
-        videosPerMonth: number | null;
-        maxLocations: number;
-      };
-      nextBillingDate: Date;
-    }>;
+  workspaceId: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  initialData?: {
+    name: string;
+    package: "basic" | "premium" | "enterprise";
+    amount: number;
+    isActive: boolean;
   };
 }
 
 export function ManageSubscriptionDialog({
-  workspace,
+  workspaceId,
+  open,
+  onOpenChange,
+  initialData,
 }: ManageSubscriptionDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const currentSubscription = workspace.subscriptions?.[0];
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      planId: currentSubscription?.plan.id || "",
-      status:
-        (currentSubscription?.status as "ACTIVE" | "PAUSED" | "CANCELLED") ||
-        "ACTIVE",
-      price: currentSubscription?.plan.photosPerMonth || 50,
-      nextBillingDate:
-        currentSubscription?.nextBillingDate.toISOString().split("T")[0] || "",
-      autoRenew: true,
+      name: initialData?.name || "",
+      package: initialData?.package || "basic",
+      customAmount: initialData?.amount,
+      isActive: initialData?.isActive ?? true,
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log("Submitting form with values:", values);
-    setIsLoading(true);
-    const response = await updateSubscription({
-      workspaceId: workspace.id,
-      ...values,
-    });
-    console.log("Update subscription response:", response);
-    setIsLoading(false);
+  const selectedPackage = form.watch("package");
+  const baseAmount = subscriptionPackages[selectedPackage].basePrice;
 
-    if (response.success) {
-      toast.success("Abonnement oppdatert");
-      setOpen(false);
-      console.log("Refreshing page...");
-      router.refresh();
-    } else {
-      toast.error(response.error as string);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    try {
+      const result = await updateSubscription(workspaceId, {
+        name: values.name,
+        package: values.package,
+        amount: values.customAmount || baseAmount,
+        isActive: values.isActive,
+      });
+
+      if (result.success) {
+        toast.success("Abonnement oppdatert");
+        router.refresh();
+        onOpenChange(false);
+      } else {
+        toast.error(result.error);
+      }
+    } catch (error) {
+      toast.error("Noe gikk galt");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Administrer abonnement</Button>
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[600px]">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Administrer abonnement</DialogTitle>
           <DialogDescription>
-            Administrer bedriftens abonnement og tillatelser
+            Oppdater abonnementsinformasjon for denne bedriften
           </DialogDescription>
         </DialogHeader>
 
@@ -132,42 +133,12 @@ export function ManageSubscriptionDialog({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
-              name="status"
+              name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Status</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Velg status" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ACTIVE">Aktiv</SelectItem>
-                      <SelectItem value="PAUSED">Pauset</SelectItem>
-                      <SelectItem value="CANCELLED">Kansellert</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="price"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Månedlig pris (NOK)</FormLabel>
+                  <FormLabel>Navn på abonnement</FormLabel>
                   <FormControl>
-                    <Input
-                      type="number"
-                      {...field}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                    />
+                    <Input placeholder="F.eks. Årlig avtale 2024" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -176,43 +147,32 @@ export function ManageSubscriptionDialog({
 
             <FormField
               control={form.control}
-              name="nextBillingDate"
+              name="package"
               render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Neste fakturadato</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-[240px] pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(new Date(field.value), "PPP", { locale: nb })
-                          ) : (
-                            <span>Velg dato</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={
-                          field.value ? new Date(field.value) : undefined
-                        }
-                        onSelect={(date) =>
-                          field.onChange(date ? format(date, "yyyy-MM-dd") : "")
-                        }
-                        disabled={(date) => date < new Date()}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
+                <FormItem>
+                  <FormLabel>Pakketype</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Velg pakke" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {Object.entries(subscriptionPackages).map(
+                        ([key, pkg]) => (
+                          <SelectItem key={key} value={key}>
+                            {pkg.name} - {pkg.basePrice.toLocaleString()} kr/mnd
+                          </SelectItem>
+                        )
+                      )}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {subscriptionPackages[selectedPackage].description}
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
@@ -220,15 +180,39 @@ export function ManageSubscriptionDialog({
 
             <FormField
               control={form.control}
-              name="autoRenew"
+              name="customAmount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tilpasset beløp (valgfritt)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      placeholder={baseAmount.toString()}
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value ? parseInt(e.target.value) : undefined
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    La stå tomt for å bruke standard pris
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isActive"
               render={({ field }) => (
                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel className="text-base">
-                      Automatisk fornyelse
-                    </FormLabel>
+                    <FormLabel className="text-base">Aktiv</FormLabel>
                     <FormDescription>
-                      Abonnementet fornyes automatisk ved slutten av perioden
+                      Deaktiver for å pause abonnementet
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -241,18 +225,21 @@ export function ManageSubscriptionDialog({
               )}
             />
 
-            <div className="flex justify-end gap-3">
+            <DialogFooter>
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setOpen(false)}
+                onClick={() => onOpenChange(false)}
               >
                 Avbryt
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Lagrer..." : "Lagre endringer"}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Lagre
               </Button>
-            </div>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>

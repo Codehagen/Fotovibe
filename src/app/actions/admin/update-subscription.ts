@@ -3,25 +3,22 @@
 import { prisma } from "@/lib/db";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 
-const updateSubscriptionSchema = z.object({
-  workspaceId: z.string(),
-  status: z.enum(["ACTIVE", "PAUSED", "CANCELLED"]),
-  price: z.number().min(0),
-  nextBillingDate: z.string(),
-  autoRenew: z.boolean(),
-});
+interface UpdateSubscriptionInput {
+  name: string;
+  package: "basic" | "premium" | "enterprise";
+  amount: number;
+  isActive: boolean;
+}
 
 export async function updateSubscription(
-  input: z.infer<typeof updateSubscriptionSchema>
+  workspaceId: string,
+  input: UpdateSubscriptionInput
 ) {
   try {
-    console.log("Starting updateSubscription with input:", input);
-
     const { userId } = await auth();
     if (!userId) {
-      throw new Error("Unauthorized: No user found");
+      throw new Error("Unauthorized");
     }
 
     // Verify user is admin
@@ -34,92 +31,38 @@ export async function updateSubscription(
       throw new Error("Unauthorized: Admin access required");
     }
 
-    const validatedFields = updateSubscriptionSchema.parse(input);
-    console.log("Validated fields:", validatedFields);
-
-    // Create or update plan
-    const plan = await prisma.plan.upsert({
-      where: { id: `default_${validatedFields.workspaceId}` },
+    // Update or create subscription
+    const subscription = await prisma.subscription.upsert({
+      where: {
+        workspaceId,
+      },
       update: {
-        price: validatedFields.price,
+        name: input.name,
+        package: input.package,
+        amount: input.amount,
+        isActive: input.isActive,
+        endDate: input.isActive ? null : new Date(),
       },
       create: {
-        id: `default_${validatedFields.workspaceId}`,
-        name: "Standard Plan",
-        price: validatedFields.price,
-        currency: "NOK",
-        interval: "MONTHLY",
-        photosPerMonth: 999999, // Unlimited for now
-        videosPerMonth: 999999, // Unlimited for now
-        maxLocations: 999999, // Unlimited for now
-        features: {},
-        isActive: true,
+        workspaceId,
+        name: input.name,
+        package: input.package,
+        amount: input.amount,
+        isActive: input.isActive,
+        startDate: new Date(),
       },
     });
-    console.log("Updated/Created plan:", plan);
 
-    // Find existing subscription
-    const existingSubscription = await prisma.subscription.findFirst({
-      where: {
-        workspaceId: validatedFields.workspaceId,
-        planId: plan.id,
-      },
-    });
-    console.log("Found existing subscription:", existingSubscription);
-
-    // Update or create subscription
-    const subscription = existingSubscription
-      ? await prisma.subscription.update({
-          where: { id: existingSubscription.id },
-          data: {
-            status: validatedFields.status,
-            nextBillingDate: new Date(validatedFields.nextBillingDate),
-            pausedAt: validatedFields.status === "PAUSED" ? new Date() : null,
-            cancelledAt:
-              validatedFields.status === "CANCELLED" ? new Date() : null,
-          },
-        })
-      : await prisma.subscription.create({
-          data: {
-            workspaceId: validatedFields.workspaceId,
-            planId: plan.id,
-            status: validatedFields.status,
-            startDate: new Date(),
-            nextBillingDate: new Date(validatedFields.nextBillingDate),
-          },
-        });
-    console.log("Updated/Created subscription:", subscription);
-
-    // If status is ACTIVE, create an invoice
-    if (validatedFields.status === "ACTIVE") {
-      const invoice = await prisma.invoice.create({
-        data: {
-          workspaceId: validatedFields.workspaceId,
-          amount: validatedFields.price,
-          status: "PENDING",
-          dueDate: new Date(validatedFields.nextBillingDate),
-        },
-      });
-      console.log("Created invoice:", invoice);
-    }
-
-    console.log(
-      "Revalidating path:",
-      `/admin/workspaces/${validatedFields.workspaceId}`
-    );
-    revalidatePath(`/admin/workspaces/${validatedFields.workspaceId}`);
-    return { success: true, subscription };
+    revalidatePath(`/admin/workspaces/${workspaceId}`);
+    return { success: true, data: subscription };
   } catch (error) {
     console.error("Error in updateSubscription:", error);
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors };
-    }
-    if (error instanceof Error) {
-      return { success: false, error: error.message };
-    }
     return {
       success: false,
-      error: "An unexpected error occurred while updating the subscription",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to update subscription",
     };
   }
 }

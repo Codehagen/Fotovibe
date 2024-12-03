@@ -104,25 +104,19 @@ model Plan {
 }
 
 model Subscription {
-  id              String    @id @default(cuid())
-  workspaceId     String
-  workspace       Workspace @relation(fields: [workspaceId], references: [id])
-  planId          String
-  plan            Plan      @relation(fields: [planId], references: [id])
-  status          String
-  startDate       DateTime
-  endDate         DateTime?
-  nextBillingDate DateTime
-  cancelledAt     DateTime?
-  pausedAt        DateTime?
-  createdAt       DateTime  @default(now()) @map(name: "created_at")
-  updatedAt       DateTime  @default(now()) @map(name: "updated_at")
-
-  @@index([workspaceId])
-  @@index([planId])
-  @@index([status])
-  @@index([nextBillingDate])
-  @@map(name: "subscriptions")
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  name        String
+  package     String // "basic" | "premium" | "enterprise"
+  amount      Float
+  isActive    Boolean   @default(true)
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  Plan        Plan?     @relation(fields: [planId], references: [id])
+  planId      String?
 }
 
 model Invoice {

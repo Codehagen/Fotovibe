@@ -25,7 +25,7 @@ export enum UserRole {
   USER = "USER",
   ADMIN = "ADMIN",
   PHOTOGRAPHER = "PHOTOGRAPHER",
-  EDITOR = "EDITOR"
+  EDITOR = "EDITOR",
 }
 
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
@@ -51,4 +51,4 @@ export interface Order {
   photoCount?: number;
   videoCount?: number;
   deliveryDate?: string;
-} 
+}

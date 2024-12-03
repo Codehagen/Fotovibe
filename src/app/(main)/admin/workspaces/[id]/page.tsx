@@ -32,15 +32,62 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { ManageSubscriptionDialog } from "@/components/admin/manage-subscription-dialog";
+import { SubscriptionManager } from "@/components/admin/subscription-manager";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import { cn } from "@/lib/utils";
+import { CreateWorkspaceOrder } from "@/components/admin/create-workspace-order";
 
 interface WorkspacePageProps {
   params: {
     id: string;
   };
+}
+
+interface WorkspaceSubscription {
+  name: string;
+  package: "basic" | "premium" | "enterprise";
+  amount: number;
+  isActive: boolean;
+}
+
+interface WorkspaceWithCounts {
+  id: string;
+  name: string;
+  address: string;
+  createdAt: Date;
+  updatedAt: Date;
+  orgnr: string;
+  city: string;
+  zip: string;
+  maxUsers: number;
+  industry: string | null;
+  preferredDays: string[];
+  preferredTimes: string[];
+  _count: {
+    users: number;
+    orders: number;
+  };
+  subscriptions: Array<{
+    id: string;
+    name: string;
+    package: string;
+    amount: number;
+    isActive: boolean;
+  }>;
+  invoices: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    dueDate: Date;
+    fikenId: string | null;
+  }>;
+}
+
+interface WorkspaceResponse {
+  success: boolean;
+  data?: WorkspaceWithCounts;
+  error?: string;
 }
 
 export default async function WorkspacePage({ params }: WorkspacePageProps) {
@@ -259,16 +306,89 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
           <WorkspaceUsers workspaceId={workspace.id} />
         </TabsContent>
 
-        <TabsContent value="orders">
-          <WorkspaceOrders workspaceId={workspace.id} />
+        <TabsContent value="orders" className="space-y-4">
+          <div className="grid gap-4">
+            {/* Orders Overview */}
+            <div className="grid gap-4 md:grid-cols-3">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Ventende oppdrag
+                  </CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {workspace._count.orders || 0}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Under arbeid
+                  </CardTitle>
+                  <Camera className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {workspace._count.activeOrders || 0}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Fullførte oppdrag
+                  </CardTitle>
+                  <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {workspace._count.completedOrders || 0}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Orders Table */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Ordre oversikt</CardTitle>
+                  <CreateWorkspaceOrder workspaceId={workspace.id} />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <WorkspaceOrders workspaceId={workspace.id} />
+              </CardContent>
+            </Card>
+          </div>
         </TabsContent>
 
-        <TabsContent value="subscription">
+        <TabsContent value="subscription" className="space-y-4">
           <div className="grid gap-4">
             {/* Current Subscription Status */}
             <Card>
               <CardHeader>
-                <CardTitle>Aktivt abonnement</CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Aktivt abonnement</CardTitle>
+                  <SubscriptionManager
+                    workspaceId={workspace.id}
+                    subscription={
+                      subscriptionData?.subscription
+                        ? {
+                            name: subscriptionData.subscription.name,
+                            package: subscriptionData.subscription.package,
+                            amount: subscriptionData.subscription.amount,
+                            isActive: subscriptionData.subscription.isActive,
+                          }
+                        : undefined
+                    }
+                  />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6">
@@ -278,107 +398,28 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                       <p
                         className={cn(
                           "text-2xl font-bold",
-                          subscriptionData?.subscription?.status === "ACTIVE"
+                          subscriptionData?.subscription?.isActive
                             ? "text-green-600"
-                            : subscriptionData?.subscription?.status ===
-                              "PAUSED"
-                            ? "text-yellow-600"
                             : "text-red-600"
                         )}
                       >
-                        {subscriptionData?.subscription?.status === "ACTIVE"
+                        {subscriptionData?.subscription?.isActive
                           ? "Aktiv"
-                          : subscriptionData?.subscription?.status === "PAUSED"
-                          ? "Pauset"
-                          : subscriptionData?.subscription?.status ===
-                            "CANCELLED"
-                          ? "Kansellert"
-                          : "Ingen aktiv"}
+                          : "Inaktiv"}
                       </p>
                     </div>
-                    <ManageSubscriptionDialog workspace={workspace} />
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Plan
-                      </p>
-                      <p className="text-lg font-medium">
-                        {subscriptionData?.subscription?.plan?.name ||
-                          "Ingen plan"}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Pakke</p>
+                      <p className="text-2xl font-bold">
+                        {subscriptionData?.subscription?.package || "Ingen"}
                       </p>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Pris
-                      </p>
-                      <p className="text-lg font-medium">
-                        {subscriptionData?.subscription?.plan
-                          ? `${subscriptionData.subscription.plan.price} ${subscriptionData.subscription.plan.currency}/mnd`
-                          : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Neste faktura
-                      </p>
-                      <p className="text-lg font-medium">
-                        {subscriptionData?.subscription?.nextBillingDate
-                          ? format(
-                              new Date(
-                                subscriptionData.subscription.nextBillingDate
-                              ),
-                              "PPP",
-                              { locale: nb }
-                            )
-                          : "-"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="grid gap-4 md:grid-cols-3">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Startdato
-                      </p>
-                      <p className="text-lg font-medium">
-                        {subscriptionData?.subscription?.startDate
-                          ? format(
-                              new Date(subscriptionData.subscription.startDate),
-                              "PPP",
-                              { locale: nb }
-                            )
-                          : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Sist endret
-                      </p>
-                      <p className="text-lg font-medium">
-                        {subscriptionData?.subscription?.pausedAt ||
-                        subscriptionData?.subscription?.cancelledAt
-                          ? format(
-                              new Date(
-                                subscriptionData.subscription.pausedAt ||
-                                  subscriptionData.subscription.cancelledAt!
-                              ),
-                              "PPP",
-                              { locale: nb }
-                            )
-                          : "-"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Status endret
-                      </p>
-                      <p className="text-lg font-medium">
-                        {subscriptionData?.subscription?.status === "PAUSED"
-                          ? "Pauset"
-                          : subscriptionData?.subscription?.status ===
-                            "CANCELLED"
-                          ? "Kansellert"
-                          : "-"}
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Månedlig beløp</p>
+                      <p className="text-2xl font-bold">
+                        {subscriptionData?.subscription?.amount?.toLocaleString() ||
+                          0}{" "}
+                        kr
                       </p>
                     </div>
                   </div>
@@ -386,70 +427,36 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
               </CardContent>
             </Card>
 
-            {/* Usage This Month */}
-            {/* <Card>
+            {/* Usage Stats */}
+            <Card>
               <CardHeader>
-                <CardTitle>Månedens forbruk</CardTitle>
+                <CardTitle>Forbruk denne måneden</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Bilder brukt
+                    <p className="text-sm font-medium">Bilder</p>
+                    <p className="text-2xl font-bold">
+                      {subscriptionData?.usage.photosUsed || 0}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-2xl font-bold">
-                        {subscriptionData?.usage.photosUsed || 0}/
-                        {subscriptionData?.subscription?.plan.photosPerMonth ||
-                          0}
-                      </p>
-                      <p className="text-sm text-muted-foreground">bilder</p>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-muted">
-                      <div
-                        className="h-2 rounded-full bg-primary"
-                        style={{
-                          width: `${
-                            ((subscriptionData?.usage.photosUsed || 0) /
-                              (subscriptionData?.subscription?.plan
-                                .photosPerMonth || 1)) *
-                            100
-                          }%`,
-                        }}
-                      />
-                    </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Videoer brukt
+                    <p className="text-sm font-medium">Videoer</p>
+                    <p className="text-2xl font-bold">
+                      {subscriptionData?.usage.videosUsed || 0}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-2xl font-bold">1/2</p>
-                      <p className="text-sm text-muted-foreground">videoer</p>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-muted">
-                      <div className="h-2 w-[50%] rounded-full bg-primary" />
-                    </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">
-                      Lokasjoner brukt
+                    <p className="text-sm font-medium">Lokasjoner</p>
+                    <p className="text-2xl font-bold">
+                      {subscriptionData?.usage.locationsUsed || 0}
                     </p>
-                    <div className="flex items-center gap-2">
-                      <p className="text-2xl font-bold">1/2</p>
-                      <p className="text-sm text-muted-foreground">
-                        lokasjoner
-                      </p>
-                    </div>
-                    <div className="h-2 w-full rounded-full bg-muted">
-                      <div className="h-2 w-[50%] rounded-full bg-primary" />
-                    </div>
                   </div>
                 </div>
               </CardContent>
-            </Card> */}
+            </Card>
 
-            {/* Subscription History */}
+            {/* Invoice History */}
             <Card>
               <CardHeader>
                 <CardTitle>Faktura historikk</CardTitle>
@@ -469,18 +476,20 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                     {subscriptionData?.invoices.map((invoice) => (
                       <TableRow key={invoice.id}>
                         <TableCell>
-                          {new Date(invoice.dueDate).toLocaleDateString(
-                            "nb-NO"
-                          )}
+                          {format(new Date(invoice.dueDate), "PPP", {
+                            locale: nb,
+                          })}
                         </TableCell>
-                        <TableCell>{invoice.amount} kr</TableCell>
+                        <TableCell>
+                          {invoice.amount.toLocaleString()} kr
+                        </TableCell>
                         <TableCell>
                           <Badge
                             variant={
                               invoice.status === "PAID"
                                 ? "default"
                                 : invoice.status === "PENDING"
-                                ? "default"
+                                ? "outline"
                                 : "destructive"
                             }
                           >

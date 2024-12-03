@@ -1,3 +1,46 @@
+/**
+ * TODO: Admin Dashboard Features to Implement
+ *
+ * 1. Performance Metrics:
+ *    - Average delivery time
+ *    - Customer satisfaction ratings
+ *    - Photographer/Editor performance stats
+ *    - Order completion rates
+ *
+ * 2. Analytics:
+ *    - Revenue trends
+ *    - Popular locations/services
+ *    - Peak booking times
+ *    - Customer retention rates
+ *
+ * 3. Quality Control:
+ *    - Review ratings
+ *    - Customer feedback overview
+ *    - Delivery time compliance
+ *    - Edit request rates
+ *
+ * 4. Resource Management:
+ *    - Photographer availability
+ *    - Editor workload
+ *    - Equipment utilization
+ *    - Scheduling efficiency
+ *
+ * 5. Financial Overview:
+ *    - Revenue per workspace
+ *    - Average order value
+ *    - Payment status
+ *    - Outstanding invoices
+ *
+ * Components to create:
+ * - @/components/admin/recent-activities
+ * - @/components/admin/photographer-performance
+ * - @/components/admin/editor-performance
+ * - @/components/admin/analytics-overview
+ * - @/components/admin/quality-metrics
+ * - @/components/admin/resource-management
+ * - @/components/admin/financial-overview
+ */
+
 import { getCurrentUser } from "@/app/actions/user/get-current-user";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,12 +55,16 @@ import {
   Calendar,
   Clock,
   CheckCircle2,
+  Star,
 } from "lucide-react";
 import Link from "next/link";
 import { Overview } from "@/components/admin/overview";
 import { getWorkspaces } from "@/app/actions/admin/get-workspaces";
 import { WorkspacesTable } from "@/components/admin/workspaces-table";
 import { CreateWorkspaceDialog } from "@/components/admin/create-workspace-dialog";
+// import { RecentActivities } from "@/components/admin/recent-activities";
+// import { PhotographerPerformance } from "@/components/admin/photographer-performance";
+// import { EditorPerformance } from "@/components/admin/editor-performance";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
@@ -33,7 +80,7 @@ export default async function AdminPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Admin Dashboard</h2>
           <p className="text-muted-foreground">
-            Velkommen tilbake til admin dashbordet
+            Velkommen til administrasjonspanelet
           </p>
         </div>
       </div>
@@ -43,11 +90,12 @@ export default async function AdminPage() {
           <TabsTrigger value="overview">Oversikt</TabsTrigger>
           <TabsTrigger value="workspaces">Bedrifter</TabsTrigger>
           <TabsTrigger value="photographers">Fotografer</TabsTrigger>
-          <TabsTrigger value="orders">Ordre</TabsTrigger>
+          <TabsTrigger value="editors">Editorer</TabsTrigger>
+          <TabsTrigger value="analytics">Statistikk</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
@@ -59,23 +107,20 @@ export default async function AdminPage() {
                 <div className="text-2xl font-bold">
                   {workspacesData?.totalWorkspaces || 0}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Totalt antall bedrifter i systemet
-                </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Aktive fotografer
+                  Aktive ordre
                 </CardTitle>
                 <Camera className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">24</div>
                 <p className="text-xs text-muted-foreground">
-                  Antall aktive fotografer denne måneden
+                  +12% fra forrige måned
                 </p>
               </CardContent>
             </Card>
@@ -83,64 +128,65 @@ export default async function AdminPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  Ventende oppdrag
-                </CardTitle>
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">0</div>
-                <p className="text-xs text-muted-foreground">
-                  Oppdrag som venter på fotograf
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Under behandling
+                  Gjennomsnittlig leveringstid
                 </CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">0</div>
+                <div className="text-2xl font-bold">3.2 dager</div>
                 <p className="text-xs text-muted-foreground">
-                  Oppdrag under redigering
+                  -8% fra forrige måned
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Kundetilfredshet
+                </CardTitle>
+                <Star className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">4.8/5</div>
+                <p className="text-xs text-muted-foreground">
+                  Basert på 45 tilbakemeldinger
                 </p>
               </CardContent>
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="grid gap-4 md:grid-cols-7">
             <Card className="col-span-4">
               <CardHeader>
-                <CardTitle>Aktivitet oversikt</CardTitle>
+                <CardTitle>Ordre oversikt</CardTitle>
               </CardHeader>
-              <CardContent className="pl-2">
+              <CardContent>
                 <Overview />
               </CardContent>
             </Card>
 
             <Card className="col-span-3">
               <CardHeader>
-                <CardTitle>Siste leveranser</CardTitle>
+                <CardTitle>Siste aktiviteter</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-8">
-                  {/* We can add recent deliveries here */}
-                  <div className="flex items-center">
-                    <CheckCircle2 className="mr-2 h-4 w-4 text-green-500" />
-                    <div className="ml-4 space-y-1">
-                      <p className="text-sm font-medium leading-none">
-                        Ingen nylige leveranser
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        Nye leveranser vil vises her
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
+              <CardContent>{/* <RecentActivities /> */}</CardContent>
+            </Card>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Fotograf ytelse</CardTitle>
+              </CardHeader>
+              <CardContent>{/* <PhotographerPerformance /> */}</CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Editor ytelse</CardTitle>
+              </CardHeader>
+              <CardContent>{/* <EditorPerformance /> */}</CardContent>
             </Card>
           </div>
         </TabsContent>
@@ -166,18 +212,6 @@ export default async function AdminPage() {
             </Button>
           </div>
           {/* PhotographersTable component will go here */}
-        </TabsContent>
-
-        <TabsContent value="orders" className="space-y-4">
-          <div className="flex justify-end">
-            <Button asChild>
-              <Link href="/admin/orders/new">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ny ordre
-              </Link>
-            </Button>
-          </div>
-          {/* OrdersTable component will go here */}
         </TabsContent>
       </Tabs>
     </div>
