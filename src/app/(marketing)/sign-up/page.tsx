@@ -13,26 +13,25 @@ export default function SignUpPage() {
           <div className="space-y-6">
             <div className="space-y-4">
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                Capture and Share Your World with Fotovibe
+                Vis frem bedriften din med Fotovibe
               </h1>
               <p className="text-xl text-muted-foreground">
-                Join our vibrant community of photographers. Showcase your best
-                shots, get inspired by others, and connect with fellow
-                enthusiasts from around the globe.
+                Få profesjonelle bilder og videoer hver måned for din bedrift.
+                Fast fotograf, fast pris, ingen overraskelser.
               </p>
             </div>
             <ul className="space-y-4 text-muted-foreground">
               <li className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-primary" />
-                Share your photography journey with the world
+                Personlig fotograf som kjenner din bedrift
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-primary" />
-                Connect with like-minded photographers
+                Månedlig levering av bilder og video
               </li>
               <li className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-primary" />
-                Get feedback and grow your skills
+                Ingen bindingstid eller skjulte kostnader
               </li>
             </ul>
           </div>
@@ -43,10 +42,10 @@ export default function SignUpPage() {
             <div className="relative bg-background/80 backdrop-blur-xl rounded-lg border shadow-lg p-6">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold tracking-tight mb-2">
-                  Create your account
+                  Kom i gang i dag
                 </h2>
                 <p className="text-muted-foreground">
-                  Get started with Fotovibe today. No credit card required.
+                  Start med Fotovibe i dag.
                 </p>
               </div>
               <SignUpForm />
