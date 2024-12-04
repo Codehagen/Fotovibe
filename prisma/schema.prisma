@@ -130,22 +130,26 @@ model Subscription {
 }
 
 model Invoice {
-  id          String    @id @default(cuid())
-  workspaceId String
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  amount      Float
-  status      String
-  dueDate     DateTime
-  fikenId     String?
-  createdAt   DateTime  @default(now()) @map(name: "created_at")
-  updatedAt   DateTime  @default(now()) @map(name: "updated_at")
+  id             String           @id @default(cuid())
+  orderId        String           @unique
+  order          Order            @relation(fields: [orderId], references: [id])
+  workspaceId    String
+  workspace      Workspace        @relation(fields: [workspaceId], references: [id])
+  amount         Float
+  status         InvoiceStatus    @default(PENDING)
+  fikenId        String? // ID from Fiken when created
+  dueDate        DateTime?
+  paidAt         DateTime?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  PaymentHistory PaymentHistory[]
+}
 
-  paymentHistory PaymentHistory[]
-
-  @@index([status])
-  @@index([workspaceId, status])
-  @@index([dueDate])
-  @@map(name: "invoices")
+enum InvoiceStatus {
+  PENDING // Not yet sent to Fiken
+  SENT // Created in Fiken
+  PAID // Marked as paid
+  CANCELLED // Cancelled/Credited
 }
 
 model PaymentHistory {
@@ -193,6 +197,7 @@ model Order {
 
   checklist       OrderChecklist?
   EditorChecklist EditorChecklist?
+  Invoice         Invoice?
 
   @@index([workspaceId])
   @@index([photographerId])

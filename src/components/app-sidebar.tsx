@@ -113,16 +113,35 @@ const getAllNavItems = (): NavItem[] => {
 
   // All role-specific items
   const allItems: NavItem[] = [
-    // User items
+    // Admin items
+    {
+      title: "Admin",
+      url: "/admin",
+      icon: Users,
+      roleLabel: "ADMIN",
+    },
     {
       title: "Ordre",
+      url: "/admin/orders",
+      icon: Calendar,
+      roleLabel: "ADMIN",
+    },
+    {
+      title: "Faktura",
+      url: "/admin/invoices",
+      icon: CreditCard,
+      roleLabel: "ADMIN",
+    },
+    // User items
+    {
+      title: "Bestillinger",
       url: "/ordre",
       icon: Calendar,
       roleLabel: "USER",
     },
     {
       title: "Faktura",
-      url: "/billing",
+      url: "/invoices",
       icon: CreditCard,
       roleLabel: "USER",
     },
@@ -145,19 +164,6 @@ const getAllNavItems = (): NavItem[] => {
       url: "/editor",
       icon: Edit2,
       roleLabel: "EDITOR",
-    },
-    // Admin items
-    {
-      title: "Admin",
-      url: "/admin",
-      icon: Users,
-      roleLabel: "ADMIN",
-    },
-    {
-      title: "Ordre",
-      url: "/admin/orders",
-      icon: Users,
-      roleLabel: "ADMIN",
     },
   ];
 

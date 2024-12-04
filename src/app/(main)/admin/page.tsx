@@ -81,6 +81,7 @@ import { getDashboardMetrics } from "@/app/actions/admin/get-dashboard-metrics";
 import { RecentActivities } from "@/components/admin/recent-activities";
 import { PhotographerPerformance } from "@/components/admin/photographer-performance";
 import { EditorPerformance } from "@/components/admin/editor-performance";
+import { TestInvoiceButton } from "@/components/admin/test-invoice-button";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
@@ -119,6 +120,10 @@ export default async function AdminPage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-medium">Dashboard Overview</h3>
+            <TestInvoiceButton />
+          </div>
           <div className="grid gap-4 md:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
