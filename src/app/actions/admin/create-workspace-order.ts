@@ -1,114 +1,51 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "../user/get-current-user";
+import { createOrder } from "../orders/create-order";
 import { revalidatePath } from "next/cache";
-import { OrderStatus } from "@prisma/client";
-import { z } from "zod";
 
-const createOrderSchema = z.object({
-  location: z.string().min(1, "Location is required"),
-  scheduledDate: z.date(),
-  requirements: z.string().optional(),
-  photoCount: z.number().min(0),
-  videoCount: z.number().min(0),
-});
-
-interface CreateOrderResponse {
-  success: boolean;
-  order?: any;
-  error?: string | z.ZodError["errors"];
+interface CreateWorkspaceOrderInput {
+  location: string;
+  scheduledDate: Date;
+  requirements?: string;
+  photoCount?: number;
+  videoCount?: number;
 }
 
 export async function createWorkspaceOrder(
   workspaceId: string,
-  input: z.infer<typeof createOrderSchema>
-): Promise<CreateOrderResponse> {
+  input: CreateWorkspaceOrderInput
+) {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Verify user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isSuperUser: true },
-    });
-
+    const user = await getCurrentUser();
     if (!user?.isSuperUser) {
-      throw new Error("Unauthorized: Admin access required");
+      return {
+        success: false,
+        error: "Unauthorized",
+      };
     }
 
-    const validatedFields = createOrderSchema.parse(input);
-
-    // Create order with checklists in a transaction
-    const order = await prisma.$transaction(async (tx) => {
-      // Create the order
-      const newOrder = await tx.order.create({
-        data: {
-          workspaceId,
-          status: OrderStatus.PENDING_PHOTOGRAPHER,
-          orderDate: new Date(),
-          scheduledDate: validatedFields.scheduledDate,
-          location: validatedFields.location,
-          requirements: validatedFields.requirements,
-          photoCount: validatedFields.photoCount,
-          videoCount: validatedFields.videoCount,
-          // Create initial status history
-          statusHistory: {
-            create: {
-              status: OrderStatus.PENDING_PHOTOGRAPHER,
-              changedBy: userId,
-              notes: "Ordre opprettet av admin",
-            },
-          },
-          // Create photographer checklist
-          checklist: {
-            create: {
-              contactedAt: null,
-              scheduledAt: null,
-              dropboxUrl: null,
-              uploadedAt: null,
-              contactNotes: null,
-              schedulingNotes: null,
-              uploadNotes: null,
-            },
-          },
-          // Create editor checklist
-          EditorChecklist: {
-            create: {
-              editingStartedAt: null,
-              uploadedAt: null,
-              completedAt: null,
-              reviewUrl: null,
-            },
-          },
-        },
-        include: {
-          workspace: true,
-          photographer: true,
-          editor: true,
-          statusHistory: {
-            orderBy: {
-              createdAt: "desc",
-            },
-          },
-          checklist: true,
-          EditorChecklist: true,
-        },
-      });
-
-      return newOrder;
+    // Create the order using the existing createOrder action
+    const orderResult = await createOrder({
+      workspaceId,
+      location: input.location,
+      scheduledDate: input.scheduledDate.toISOString(),
+      requirements: input.requirements,
+      photoCount: input.photoCount,
+      videoCount: input.videoCount,
     });
 
-    revalidatePath(`/admin/workspaces/${workspaceId}`);
-    return { success: true, order };
-  } catch (error) {
-    console.error("Error in createWorkspaceOrder:", error);
-    if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors };
+    if (!orderResult.success) {
+      return orderResult;
     }
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/orders");
+
+    return orderResult;
+  } catch (error) {
+    console.error("Error creating workspace order:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Failed to create order",

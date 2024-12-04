@@ -4,8 +4,8 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "../user/get-current-user";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createInvoice } from "../invoices/create-invoice";
-import { Order, Subscription } from "@prisma/client";
+import { createFikenInvoice } from "@/lib/fiken";
+import { Order } from "@prisma/client";
 
 const createOrderSchema = z.object({
   workspaceId: z.string(),
@@ -16,63 +16,6 @@ const createOrderSchema = z.object({
   photoCount: z.number().optional(),
   videoCount: z.number().optional(),
 });
-
-async function calculateOrderAmount(order: Order) {
-  // Get the workspace's active subscription
-  const subscription = await prisma.subscription.findFirst({
-    where: {
-      workspaceId: order.workspaceId,
-      isActive: true,
-      endDate: {
-        gt: new Date(), // Subscription hasn't ended
-      },
-    },
-    include: {
-      Plan: true, // Include the plan details
-    },
-  });
-
-  if (!subscription) {
-    throw new Error("No active subscription found for workspace");
-  }
-
-  // Base pricing from subscription plan
-  const basePrice = subscription.amount;
-
-  // Calculate extra costs if order exceeds subscription limits
-  let extraPhotosCost = 0;
-  let extraVideosCost = 0;
-
-  if (subscription.Plan) {
-    // Extra photos beyond plan limit
-    if (
-      order.photoCount &&
-      order.photoCount > subscription.Plan.photosPerMonth
-    ) {
-      const extraPhotos = order.photoCount - subscription.Plan.photosPerMonth;
-      extraPhotosCost = extraPhotos * 100; // 100 NOK per extra photo
-    }
-
-    // Extra videos beyond plan limit
-    if (
-      order.videoCount &&
-      subscription.Plan.videosPerMonth &&
-      order.videoCount > subscription.Plan.videosPerMonth
-    ) {
-      const extraVideos = order.videoCount - subscription.Plan.videosPerMonth;
-      extraVideosCost = extraVideos * 500; // 500 NOK per extra video
-    }
-  }
-
-  // Calculate total
-  const totalAmount = basePrice + extraPhotosCost + extraVideosCost;
-
-  // Add VAT (25% in Norway)
-  const vatRate = 0.25;
-  const totalWithVAT = totalAmount * (1 + vatRate);
-
-  return Math.round(totalWithVAT); // Round to nearest NOK
-}
 
 export async function createOrder(input: z.infer<typeof createOrderSchema>) {
   try {
@@ -100,7 +43,6 @@ export async function createOrder(input: z.infer<typeof createOrderSchema>) {
           requirements: validatedFields.requirements,
           photoCount: validatedFields.photoCount,
           videoCount: validatedFields.videoCount,
-          // Create initial status history
           statusHistory: {
             create: {
               status: "PENDING_PHOTOGRAPHER",
@@ -108,7 +50,6 @@ export async function createOrder(input: z.infer<typeof createOrderSchema>) {
               notes: "Ordre opprettet av admin",
             },
           },
-          // Create photographer checklist
           checklist: {
             create: {
               contactedAt: null,
@@ -120,7 +61,6 @@ export async function createOrder(input: z.infer<typeof createOrderSchema>) {
               uploadNotes: null,
             },
           },
-          // Create editor checklist
           EditorChecklist: {
             create: {
               editingStartedAt: null,
@@ -131,28 +71,76 @@ export async function createOrder(input: z.infer<typeof createOrderSchema>) {
           },
         },
         include: {
-          workspace: true,
-          photographer: true,
-          editor: true,
-          statusHistory: {
-            orderBy: {
-              createdAt: "desc",
+          workspace: {
+            include: {
+              subscriptions: {
+                where: {
+                  isActive: true,
+                  OR: [{ endDate: null }, { endDate: { gt: new Date() } }],
+                },
+                include: {
+                  Plan: true,
+                },
+                orderBy: {
+                  startDate: "desc",
+                },
+                take: 1,
+              },
             },
           },
-          checklist: true,
-          EditorChecklist: true,
         },
       });
 
-      // Calculate amount based on subscription and extras
-      const amount = await calculateOrderAmount(order);
+      // Calculate invoice amount based on subscription
+      const subscription = newOrder.workspace.subscriptions[0];
+      if (!subscription) {
+        throw new Error("No active subscription found for workspace");
+      }
 
-      // Create invoice
-      await createInvoice({
-        orderId: order.id,
-        workspaceId: order.workspaceId,
-        amount,
-        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days
+      // Calculate invoice amount
+      let totalAmount = subscription.amount;
+
+      // Add extra charges if order exceeds subscription limits
+      if (subscription.Plan) {
+        if (
+          validatedFields.photoCount &&
+          validatedFields.photoCount > subscription.Plan.photosPerMonth
+        ) {
+          const extraPhotos =
+            validatedFields.photoCount - subscription.Plan.photosPerMonth;
+          totalAmount += extraPhotos * 100; // 100 NOK per extra photo
+        }
+
+        if (
+          validatedFields.videoCount &&
+          subscription.Plan.videosPerMonth &&
+          validatedFields.videoCount > subscription.Plan.videosPerMonth
+        ) {
+          const extraVideos =
+            validatedFields.videoCount - subscription.Plan.videosPerMonth;
+          totalAmount += extraVideos * 500; // 500 NOK per extra video
+        }
+      }
+
+      // Create invoice in Fiken first
+      const fikenResult = await createFikenInvoice({
+        orderId: newOrder.id,
+        workspaceId: newOrder.workspaceId,
+        amount: totalAmount,
+        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        description: `Fotovibe oppdrag - ${newOrder.location}\nOrdre ID: ${newOrder.id}`,
+      });
+
+      // Create invoice in our database
+      await tx.invoice.create({
+        data: {
+          orderId: newOrder.id,
+          workspaceId: newOrder.workspaceId,
+          amount: totalAmount,
+          status: "SENT",
+          fikenId: fikenResult.fikenId,
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+        },
       });
 
       return newOrder;

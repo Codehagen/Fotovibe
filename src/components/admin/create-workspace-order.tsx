@@ -36,6 +36,7 @@ import { nb } from "date-fns/locale";
 import { CalendarIcon, PlusCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { createWorkspaceOrder } from "@/app/actions/admin/create-workspace-order";
+import { testFikenInvoice } from "@/app/actions/admin/test-fiken-invoice";
 
 const formSchema = z.object({
   location: z.string().min(1, "Location is required"),
@@ -46,6 +47,8 @@ const formSchema = z.object({
   photoCount: z.number().min(0).default(0),
   videoCount: z.number().min(0).default(0),
 });
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface CreateWorkspaceOrderProps {
   workspaceId: string;
@@ -58,7 +61,7 @@ export function CreateWorkspaceOrder({
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       photoCount: 0,
@@ -66,28 +69,52 @@ export function CreateWorkspaceOrder({
     },
   });
 
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: FormValues) {
     setIsLoading(true);
     try {
-      const result = await createWorkspaceOrder(workspaceId, values);
+      const orderInput = {
+        location: values.location,
+        scheduledDate: values.scheduledDate,
+        requirements: values.requirements,
+        photoCount: values.photoCount,
+        videoCount: values.videoCount,
+      };
 
-      if (result.success) {
+      const orderResult = await createWorkspaceOrder(workspaceId, orderInput);
+
+      if (orderResult.success) {
+        // Commenting out invoice creation for testing
+        /* 
+        const invoiceResult = await testFikenInvoice();
+
+        if (invoiceResult.success) {
+          toast.success("Ordre og faktura opprettet");
+        } else {
+          toast.error(
+            `Ordre opprettet, men feilet å opprette faktura: ${invoiceResult.error}`
+          );
+        }
+        */
+
+        // Simple success message for order creation only
         toast.success("Ordre opprettet");
+
         setOpen(false);
         form.reset();
         router.refresh();
       } else {
-        if (Array.isArray(result.error)) {
-          const errorMessage = result.error
+        if (Array.isArray(orderResult.error)) {
+          const errorMessage = orderResult.error
             .map((err) => err.message)
             .join(", ");
           toast.error(errorMessage);
         } else {
-          toast.error(result.error as string);
+          toast.error(orderResult.error as string);
         }
       }
     } catch (error) {
       toast.error("Noe gikk galt");
+      console.error("Error creating order:", error);
     } finally {
       setIsLoading(false);
     }
