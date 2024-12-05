@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { HelpCircle, Check, X } from "lucide-react";
 import { TestimonialSlider } from "@/components/sections/testimonials-slider";
 import { ProductComparisonSlider } from "@/components/product-comparison-slider";
+import Link from "next/link";
 
 export const metadata = {
   title: "FotoVibe vs Competition | Compare Photo Sharing Platforms",
@@ -110,10 +111,9 @@ function ComparisonHeader() {
             {PRODUCTS.competitor.name}
           </h1>
           <p className="mt-4 max-w-[400px] text-gray-600">
-            Learn how {PRODUCTS.fotovibe.name} compares to{" "}
-            {PRODUCTS.competitor.name} and why {PRODUCTS.fotovibe.name} is the
-            best {PRODUCTS.competitor.name} alternative for all your photography
-            needs.
+            Se hvordan {PRODUCTS.fotovibe.name} gjør det enklere å få
+            profesjonelle bilder sammenlignet med {PRODUCTS.competitor.name}, og
+            hvorfor vi er det beste valget for din bedrift.
           </p>
         </div>
         <Image
@@ -125,15 +125,16 @@ function ComparisonHeader() {
         />
       </div>
       <div className="mt-10 flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-        <Button size="lg" className="rounded-full">
-          Start for Free
+        <Button size="lg" className="rounded-full" asChild>
+          <Link href="/sign-up">Start nå</Link>
         </Button>
         <Button
           variant="outline"
           size="lg"
           className="rounded-full border-gray-300"
+          asChild
         >
-          Migrate from {PRODUCTS.competitor.name}
+          <Link href="/customers">Les kundehistorier</Link>
         </Button>
       </div>
     </div>
