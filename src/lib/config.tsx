@@ -90,7 +90,7 @@ export const siteConfig = {
       label: "Kunder",
     },
     {
-      href: "/priser",
+      href: "/pricing",
       label: "Priser",
     },
     {

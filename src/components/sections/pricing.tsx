@@ -10,24 +10,54 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { FaStar } from "react-icons/fa";
+import confetti from "canvas-confetti";
+import NumberFlow from "@number-flow/react";
 
 export default function PricingSection() {
   const [isMonthly, setIsMonthly] = useState(true);
   const { isDesktop } = useWindowSize();
+  const switchRef = useRef<HTMLButtonElement>(null);
 
-  const handleToggle = () => {
-    setIsMonthly(!isMonthly);
+  const handleToggle = (checked: boolean) => {
+    setIsMonthly(!checked);
+    if (checked && switchRef.current) {
+      // Get the position of the toggle switch
+      const rect = switchRef.current.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const y = rect.top + rect.height / 2;
+
+      // Fire confetti from the toggle position
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: {
+          x: x / window.innerWidth,
+          y: y / window.innerHeight,
+        },
+        colors: ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"],
+        ticks: 200,
+        gravity: 1.2,
+        decay: 0.94,
+        startVelocity: 30,
+        shapes: ["circle"],
+      });
+    }
   };
 
   return (
-    <Section title="Pricing" subtitle="Choose the plan that's right for you">
+    <Section title="Priser" subtitle="Forutsigbart, og rimelige priser">
       <div className="flex justify-center mb-10">
         <span className="mr-2 font-semibold">Monthly</span>
         <label className="relative inline-flex items-center cursor-pointer">
           <Label>
-            <Switch checked={!isMonthly} onCheckedChange={handleToggle} />
+            <Switch
+              ref={switchRef}
+              checked={!isMonthly}
+              onCheckedChange={handleToggle}
+              className="relative"
+            />
           </Label>
         </label>
         <span className="ml-2 font-semibold">Yearly</span>
@@ -88,7 +118,25 @@ export default function PricingSection() {
               </p>
               <p className="mt-6 flex items-center justify-center gap-x-2">
                 <span className="text-5xl font-bold tracking-tight text-foreground">
-                  {isMonthly ? plan.price : plan.yearlyPrice}
+                  <NumberFlow
+                    value={
+                      isMonthly
+                        ? Number(plan.price.replace(/[^0-9]/g, ""))
+                        : Number(plan.yearlyPrice.replace(/[^0-9]/g, ""))
+                    }
+                    format={{
+                      style: "currency",
+                      currency: "NOK",
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    }}
+                    transformTiming={{
+                      duration: 500,
+                      easing: "ease-out",
+                    }}
+                    willChange
+                    className="font-variant-numeric: tabular-nums"
+                  />
                 </span>
                 {plan.period !== "Next 3 months" && (
                   <span className="text-sm font-semibold leading-6 tracking-wide text-muted-foreground">
