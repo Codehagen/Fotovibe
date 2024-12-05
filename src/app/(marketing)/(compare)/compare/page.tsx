@@ -59,6 +59,18 @@ export default function ComparePage() {
           </div>
         </div>
       </section>
+      <section>
+        <div className="text-center space-y-4 mb-12">
+          <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+            Fotovibe vs Competitor <span className="block">forskjeller</span>
+          </h2>
+          <p className="text-muted-foreground text-lg">
+            Fotovibe er #1 i Norge for profesjonell fotografering.
+            <br />
+            og hvordan vi har hjulpet dem med å styrke deres visuelle profil.
+          </p>
+        </div>
+      </section>
 
       {/* Rest of the sections can be removed or modified as needed */}
     </main>
