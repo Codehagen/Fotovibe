@@ -47,9 +47,20 @@ export default function PricingSection() {
   };
 
   return (
-    <Section title="Priser" subtitle="Forutsigbart, og rimelige priser">
+    <Section>
+      <div className="text-center space-y-4 mb-12">
+        <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Forutsigbare, <span className="block">og rimelige priser</span>
+        </h2>
+        <p className="text-muted-foreground text-lg">
+          Finn en plan som passer dine behov.
+          <br />
+          Start gratis, ingen kredittkort nødvendig.
+        </p>
+      </div>
+
       <div className="flex justify-center mb-10">
-        <span className="mr-2 font-semibold">Monthly</span>
+        {/* <span className="mr-2 font-semibold">Monthly</span> */}
         <label className="relative inline-flex items-center cursor-pointer">
           <Label>
             <Switch
@@ -60,7 +71,9 @@ export default function PricingSection() {
             />
           </Label>
         </label>
-        <span className="ml-2 font-semibold">Yearly</span>
+        <span className="ml-2 font-semibold">
+          Årlig rabatt <span className="text-primary">(2 måneder gratis)</span>
+        </span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 sm:2 gap-4">
         {siteConfig.pricing.map((plan, index) => (
