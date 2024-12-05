@@ -26,6 +26,10 @@ const nextConfig = {
       protocol: "https",
         hostname: "d2vwwcvoksz7ty.cloudfront.net",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
   eslint: { ignoreDuringBuilds: true },
