@@ -7,6 +7,27 @@ import { BLOG_CATEGORIES } from "@/lib/blog/content"
 import { getBlurDataURL } from "@/lib/blog/images"
 import BlogCard from "@/components/blog/blog-card"
 
+interface BlogPost {
+  title: string
+  summary: string
+  publishedAt: string
+  image: string
+  author: string
+  slug: string
+  mdx?: string
+  related?: string[]
+  tableOfContents?: any
+  images?: any
+  tweetIds?: any
+  githubRepos?: any
+  categories?: string[]
+  _meta?: any
+}
+
+interface BlogPostWithBlur extends BlogPost {
+  blurDataURL: string
+}
+
 export async function generateStaticParams() {
   return BLOG_CATEGORIES.map((category) => ({
     slug: category.slug,
@@ -47,12 +68,19 @@ export default async function BlogCategory({
   if (!data) {
     notFound()
   }
-  const articles = await Promise.all(
+
+  const articles: BlogPostWithBlur[] = await Promise.all(
     allBlogPosts
-      .filter((post) => post.categories.includes(data.slug))
+      .filter((post) => post.categories?.includes(data.slug))
       .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
       .map(async (post) => ({
-        ...post,
+        title: post.title,
+        summary: post.summary,
+        publishedAt: post.publishedAt,
+        image: post.image,
+        author: post.author,
+        slug: post.slug,
+        categories: post.categories,
         blurDataURL: await getBlurDataURL(post.image),
       })),
   )

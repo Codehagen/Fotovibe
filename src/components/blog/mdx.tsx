@@ -1,41 +1,41 @@
-import Link from "next/link"
-import { MDXContent } from "@content-collections/mdx/react"
+import Link from "next/link";
+import { MDXContent } from "@content-collections/mdx/react";
 import {
   allBlogPosts,
   allChangelogPosts,
   allHelpPosts,
-} from "content-collections"
-import { ListChecks } from "lucide-react"
+} from "content-collections";
+import { ListChecks } from "lucide-react";
 
-import BlurImage from "@/lib/blog/blur-image"
-import { HELP_CATEGORIES, POPULAR_ARTICLES } from "@/lib/blog/content"
-import { cn, formatDate } from "@/lib/utils"
+import BlurImage from "@/lib/blog/blur-image";
+import { HELP_CATEGORIES, POPULAR_ARTICLES } from "@/lib/blog/content";
+import { cn, formatDate } from "@/lib/utils";
 
-import CategoryCard from "./category-card"
-import CopyBox from "./copy-box"
-import HelpArticleLink from "./help-article-link"
-import ExpandingArrow from "./icons/expanding-arrow"
-import ZoomImage from "./zoom-image"
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { tomorrow } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import CategoryCard from "./category-card";
+import CopyBox from "./copy-box";
+import HelpArticleLink from "./help-article-link";
+import ExpandingArrow from "./icons/expanding-arrow";
+import ZoomImage from "./zoom-image";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 const CustomLink = (props: any) => {
-  const href = props.href
+  const href = props.href;
 
   if (href.startsWith("/")) {
     return (
       <Link {...props} href={href}>
         {props.children}
       </Link>
-    )
+    );
   }
 
   if (href.startsWith("#")) {
-    return <a {...props} />
+    return <a {...props} />;
   }
 
-  return <a target="_blank" rel="noopener noreferrer" {...props} />
-}
+  return <a target="_blank" rel="noopener noreferrer" {...props} />;
+};
 
 const components = {
   h2: (props: any) => (
@@ -88,18 +88,18 @@ const components = {
             props.variant === "info",
           "border-green-500 bg-green-100 dark:bg-green-900/30":
             props.variant === "success",
-        },
+        }
       )}
       {...props}
     />
   ),
   Quote: (props: {
-    author: string
-    authorSrc: string
-    title: string
-    company: string
-    companySrc: string
-    text: string
+    author: string;
+    authorSrc: string;
+    title: string;
+    company: string;
+    companySrc: string;
+    text: string;
   }) => (
     <div className="not-prose mt-4 flex flex-col items-center justify-center space-y-4 rounded-md border border-border bg-card p-10">
       <div className="w-fit rounded-full bg-gradient-to-r from-blue-100 to-green-100 p-1.5 dark:from-blue-900 dark:to-green-900">
@@ -215,32 +215,32 @@ const components = {
         style={tomorrow}
         customStyle={{
           margin: 0,
-          borderRadius: title ? '0 0 0.375rem 0.375rem' : '0.375rem',
+          borderRadius: title ? "0 0 0.375rem 0.375rem" : "0.375rem",
         }}
       >
         {children}
       </SyntaxHighlighter>
     </div>
   ),
-}
+};
 
 interface MDXProps {
-  code: string
-  images?: { alt: string; src: string; blurDataURL: string }[]
-  tweets?: any[]
-  repos?: any[]
-  className?: string
+  code: string;
+  images?: { alt: string; src: string; blurDataURL: string }[];
+  tweets?: any[];
+  repos?: any[];
+  className?: string;
 }
 
 export function MDX({ code, images, tweets, repos, className }: MDXProps) {
   const MDXImage = (props: any) => {
-    if (!images) return null
+    if (!images) return null;
     const blurDataURL = images.find(
-      (image) => image.src === props.src,
-    )?.blurDataURL
+      (image) => image.src === props.src
+    )?.blurDataURL;
 
-    return <ZoomImage {...props} blurDataURL={blurDataURL} />
-  }
+    return <ZoomImage {...props} blurDataURL={blurDataURL} />;
+  };
 
   // ... other custom components ...
 
@@ -249,7 +249,7 @@ export function MDX({ code, images, tweets, repos, className }: MDXProps) {
       data-mdx-container
       className={cn(
         "prose-headings:font-display prose prose-gray max-w-none transition-all prose-headings:relative prose-headings:scroll-mt-20 prose-headings:font-bold",
-        className,
+        className
       )}
     >
       <MDXContent
@@ -262,5 +262,5 @@ export function MDX({ code, images, tweets, repos, className }: MDXProps) {
         }}
       />
     </article>
-  )
+  );
 }

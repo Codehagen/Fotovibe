@@ -47,16 +47,12 @@ export default function Footer() {
           </span>
           <ul className="flex justify-start md:justify-end text-sm tracking-tight text-foreground">
             <li className="mr-3 md:mx-4">
-              <Link
-                href="/personvern"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
+              <Link href="/personvern" rel="noopener noreferrer">
                 Personvernerklæring
               </Link>
             </li>
             <li className="mr-3 md:mx-4">
-              <Link href="/vilkar" target="_blank" rel="noopener noreferrer">
+              <Link href="/vilkar" rel="noopener noreferrer">
                 Vilkår og Betingelser
               </Link>
             </li>

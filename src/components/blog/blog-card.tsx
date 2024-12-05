@@ -1,17 +1,25 @@
-import Link from "next/link"
+import Link from "next/link";
 
-import BlurImage from "@/lib/blog/blur-image"
-import { formatDate } from "@/lib/utils"
+import BlurImage from "@/lib/blog/blur-image";
+import { formatDate } from "@/lib/utils";
 
-import Author from "./author"
+import Author from "./author";
 
 interface BlogPost {
-  title: string
-  summary: string
-  publishedAt: string
-  image: string
-  author: string
-  slug: string
+  title: string;
+  summary: string;
+  publishedAt: string;
+  image: string;
+  author: string;
+  slug: string;
+  mdx?: string;
+  related?: string[];
+  tableOfContents?: any;
+  images?: any;
+  tweetIds?: any;
+  githubRepos?: any;
+  categories?: string[];
+  _meta?: any;
 }
 
 export default function BlogCard({
@@ -19,9 +27,9 @@ export default function BlogCard({
   priority,
 }: {
   data: BlogPost & {
-    blurDataURL: string
-  }
-  priority?: boolean
+    blurDataURL: string;
+  };
+  priority?: boolean;
 }) {
   return (
     <Link
@@ -57,5 +65,5 @@ export default function BlogCard({
         </div>
       </div>
     </Link>
-  )
+  );
 }
