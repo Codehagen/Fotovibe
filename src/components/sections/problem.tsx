@@ -3,6 +3,18 @@ import Section from "@/components/section";
 import { Card, CardContent } from "@/components/ui/card";
 import { MessageCircle, CalendarRange, Camera } from "lucide-react";
 
+const ease = [0.16, 1, 0.3, 1];
+
+function ProcessPill() {
+  return (
+    <div className="mx-auto mb-8 flex w-fit items-center space-x-2 rounded-full bg-primary/20 px-2 py-1 ring-1 ring-primary/30">
+      <p className="text-xs font-medium text-primary sm:text-sm">
+        ✨ Slik fungerer det
+      </p>
+    </div>
+  );
+}
+
 const steps = [
   {
     title: "1. Fortell oss hva du har bruk for",
@@ -26,10 +38,19 @@ const steps = [
 
 export default function ProcessSection() {
   return (
-    <Section
-      title="Hvordan fungerer Fotovibe?"
-      subtitle="Enkel prosess, profesjonelle resultater"
-    >
+    <Section>
+      <ProcessPill />
+      <div className="text-center space-y-4 mb-12">
+        <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Med Fotovibe{" "}
+          <span className="block">slipper du å tenke på innhold</span>
+        </h2>
+        <p className="text-muted-foreground text-lg">
+          Enkel prosess, med profesjonelle resultater
+          <br />
+          Med Fotovibe gjør vi bedriftsfoto enkelt
+        </p>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
         {steps.map((step, index) => (
           <BlurFade key={index} delay={0.2 + index * 0.2} inView>

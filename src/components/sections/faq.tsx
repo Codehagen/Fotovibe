@@ -36,10 +36,17 @@ const faqs = [
 
 export default function FAQ() {
   return (
-    <Section
-      title="Ofte stilte spørsmål"
-      subtitle="Alt du lurer på om Fotovibe"
-    >
+    <Section>
+      <div className="text-center space-y-4 mb-12">
+        <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Ofte stilte spørsmål
+        </h2>
+        <p className="text-muted-foreground text-lg">
+          Alt du lurer på om Fotovibe
+          <br />
+          og hvordan vi kan hjelpe deg.
+        </p>
+      </div>
       <div className="mx-auto my-12 md:max-w-[800px]">
         <Accordion
           type="single"

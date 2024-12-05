@@ -269,11 +269,18 @@ const testimonials = [
 
 export default function Testimonials() {
   return (
-    <Section
-      title="Testimonials"
-      subtitle="What our customers are saying"
-      className="max-w-8xl"
-    >
+    <Section>
+      <div className="text-center space-y-4 mb-12">
+        <h2 className="text-4xl font-bold tracking-tight sm:text-5xl">
+          Våre kunder lykkes{" "}
+          <span className="block">med profesjonelt innhold</span>
+        </h2>
+        <p className="text-muted-foreground text-lg">
+          Se hva våre fornøyde kunder sier om samarbeidet med Fotovibe
+          <br />
+          og hvordan vi har hjulpet dem med å styrke deres visuelle profil.
+        </p>
+      </div>
       <div className="relative mt-6 max-h-screen overflow-hidden">
         <div className="gap-4 md:columns-2 xl:columns-3 2xl:columns-4">
           {Array(Math.ceil(testimonials.length / 3))
