@@ -3,66 +3,61 @@
 import { prisma } from "@/lib/db";
 import { RequestType } from "@prisma/client";
 
-interface CreateContactRequestInput {
+interface ContactRequestData {
   name: string;
   email: string;
   phone: string;
-  company: {
+  company?: {
     name: string;
     orgnr: string;
     address: string;
     zip: string;
     city: string;
-  };
+  } | null;
   requestType?: RequestType;
+  experience?: string;
+  equipment?: string;
+  portfolio?: string;
+  specialties?: string[];
+  availability?: string;
 }
 
-export async function createContactRequest(input: CreateContactRequestInput) {
+export async function createContactRequest(data: ContactRequestData) {
   try {
-    // Basic validation
-    if (!input.name || !input.email || !input.phone) {
-      return {
-        success: false,
-        error: "Alle felt må fylles ut",
-      };
-    }
-
-    if (!input.company.orgnr) {
-      return {
-        success: false,
-        error: "Vennligst velg en bedrift fra søkeresultatene",
-      };
-    }
-
-    // Create the contact request
     const contactRequest = await prisma.contactRequest.create({
       data: {
-        name: input.name,
-        email: input.email,
-        phone: input.phone,
-        companyName: input.company.name,
-        companyOrgnr: input.company.orgnr,
-        companyAddress: input.company.address,
-        companyZip: input.company.zip,
-        companyCity: input.company.city,
-        requestType: input.requestType || "CLIENT",
-        status: "PENDING",
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        // Only include company data if it exists
+        ...(data.company
+          ? {
+              companyName: data.company.name,
+              companyOrgnr: data.company.orgnr,
+              companyAddress: data.company.address,
+              companyZip: data.company.zip,
+              companyCity: data.company.city,
+            }
+          : {
+              companyName: "",
+              companyOrgnr: "",
+              companyAddress: "",
+              companyZip: "",
+              companyCity: "",
+            }),
+        requestType: data.requestType || "CLIENT",
+        // Include photographer specific fields
+        experience: data.experience,
+        equipment: data.equipment,
+        portfolio: data.portfolio,
+        specialties: data.specialties || [],
+        availability: data.availability,
       },
     });
 
-    // You might want to send notifications here
-    // await sendAdminNotification(contactRequest);
-    // await sendConfirmationEmail(input.email);
-
-    return {
-      success: true,
-      data: contactRequest,
-    };
+    return { success: true, data: contactRequest };
   } catch (error) {
     console.error("Error creating contact request:", error);
-    return {
-      success: false,
-      error: "Kunne ikke opprette henvendelsen. Vennligst prøv igjen senere.",
-    };
+    return { success: false, error: "Failed to create contact request" };
   }
 }

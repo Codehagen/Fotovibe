@@ -463,6 +463,13 @@ model ContactRequest {
   approvedAt DateTime?
   rejectedAt DateTime?
 
+  // Photographer specific fields
+  experience   String? // For photographer experience
+  equipment    String? // For photography equipment
+  portfolio    String? // For portfolio URL
+  specialties  String[] // Photography specialties
+  availability String? // Availability preferences
+
   @@index([status])
   @@index([requestType])
   @@index([companyOrgnr])

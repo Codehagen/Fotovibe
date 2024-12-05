@@ -215,7 +215,7 @@ export const siteConfig = {
       title: "Om Oss",
       links: [
         { href: "/om-oss", text: "Om Fotovibe", icon: null },
-        { href: "/fotografer", text: "Våre Fotografer", icon: null },
+        { href: "/photograph/sign-up", text: "Bli Fotograf", icon: null },
         { href: "/blog", text: "Blogg", icon: null },
         { href: "/kontakt", text: "Kontakt", icon: null },
       ],
