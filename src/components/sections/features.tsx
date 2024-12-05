@@ -1,41 +1,48 @@
 import Features from "@/components/features-horizontal";
 import Section from "@/components/section";
-import { BarChart3, Brain, FileText, LineChart } from "lucide-react";
+import { Users, User, Building, Presentation } from "lucide-react";
 
 const data = [
   {
     id: 1,
-    title: "AI-Powered Dashboard",
-    content: "Visualize trends and gain insights at a glance.",
+    title: "Stemningsbilder",
+    content:
+      "Fang den unike atmosfæren på arbeidsplassen din. Vi tar autentiske bilder av ansatte i naturlige arbeidssituasjoner som viser bedriftskulturen og miljøet.",
     image: "/dashboard.png",
-    icon: <BarChart3 className="h-6 w-6 text-primary" />,
+    icon: <Users className="h-6 w-6 text-primary" />,
   },
   {
     id: 2,
-    title: "Natural Language Processing",
-    content: "Analyze text and extract sentiment effortlessly.",
-    image: "/dashboard.png",
-    icon: <Brain className="h-6 w-6 text-primary" />,
+    title: "Portrettfotografering",
+    content:
+      "Profesjonelle portretter av ansatte til nettsider, sosiale medier og markedsføring. Vi sørger for at personligheten skinner gjennom i hvert bilde.",
+      image: "/dashboard.png",
+    icon: <User className="h-6 w-6 text-primary" />,
   },
   {
     id: 3,
-    title: "Predictive Analytics",
-    content: "Forecast trends and make data-driven decisions.",
-    image: "/dashboard.png",
-    icon: <LineChart className="h-6 w-6 text-primary" />,
+    title: "Lokaler og Fasiliteter",
+    content:
+      "Vis frem lokalene og fasilitetene deres fra sin beste side. Perfekt for nettsider, eiendomsvisninger eller markedsføringsmateriell.",
+      image: "/dashboard.png",
+    icon: <Building className="h-6 w-6 text-primary" />,
   },
   {
     id: 4,
-    title: "Automated Reporting",
-    content: "Generate comprehensive reports with one click.",
-    image: "/dashboard.png",
-    icon: <FileText className="h-6 w-6 text-primary" />,
+    title: "Produkt og Tjenester",
+    content:
+      "Fremhev produktene eller tjenestene deres med profesjonelle bilder som viser kvalitet og detaljer. Ideelt for nettbutikk, kataloger og presentasjoner.",
+    image: "/dashboard.png",  
+    icon: <Presentation className="h-6 w-6 text-primary" />,
   },
 ];
 
-export default function Component() {
+export default function PhotoTypes() {
   return (
-    <Section title="Features" subtitle="User Flows and Navigational Structures">
+    <Section
+      title="Våre Fototjenester"
+      subtitle="Profesjonell fotografering tilpasset ditt behov"
+    >
       <Features collapseDelay={5000} linePosition="bottom" data={data} />
     </Section>
   );

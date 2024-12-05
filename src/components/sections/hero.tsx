@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-
 import { Icons } from "@/components/icons";
 import HeroVideoDialog from "@/components/magicui/hero-video";
 import { buttonVariants } from "@/components/ui/button";
@@ -13,17 +12,17 @@ const ease = [0.16, 1, 0.3, 1];
 function HeroPill() {
   return (
     <motion.a
-      href="/blog/introducing-acme-ai"
+      href="/blog/fotovibe-lansering"
       className="flex w-auto items-center space-x-2 rounded-full bg-primary/20 px-2 py-1 ring-1 ring-accent whitespace-pre"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease }}
     >
       <div className="w-fit rounded-full bg-accent px-2 py-0.5 text-center text-xs font-medium text-primary sm:text-sm">
-        📣 Announcement
+        🎉 Nyhet
       </div>
       <p className="text-xs font-medium text-primary sm:text-sm">
-        Introducing Fotovibe
+        Lansering av Fotovibe
       </p>
       <svg
         width="12"
@@ -52,24 +51,12 @@ function HeroTitles() {
         transition={{
           duration: 1,
           ease,
-          staggerChildren: 0.2,
         }}
       >
-        {["Automate", "your", "workflow", "with AI"].map((text, index) => (
-          <motion.span
-            key={index}
-            className="inline-block px-1 md:px-2 text-balance font-semibold"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{
-              duration: 0.8,
-              delay: index * 0.2,
-              ease,
-            }}
-          >
-            {text}
-          </motion.span>
-        ))}
+        <span className="block font-semibold">Profesjonelt Bedriftsfoto</span>
+        <span className="block text-3xl sm:text-4xl md:text-5xl mt-2 text-muted-foreground">
+          på abonnement
+        </span>
       </motion.h1>
       <motion.p
         className="mx-auto max-w-xl text-center text-lg leading-7 text-muted-foreground sm:text-xl sm:leading-9 text-balance"
@@ -81,7 +68,8 @@ function HeroTitles() {
           ease,
         }}
       >
-        No matter what problem you have, our AI can help you solve it.
+        Få profesjonelle bilder og videoer hver måned for din bedrift. Fast
+        fotograf, fast pris, ingen overraskelser.
       </motion.p>
     </div>
   );
@@ -97,14 +85,14 @@ function HeroCTA() {
         transition={{ delay: 0.8, duration: 0.8, ease }}
       >
         <Link
-          href="/signup"
+          href="/bestill"
           className={cn(
             buttonVariants({ variant: "default" }),
             "w-full sm:w-auto text-background flex gap-2"
           )}
         >
           <Icons.logo className="h-6 w-6" />
-          Get started for free
+          Bli kontaktet
         </Link>
       </motion.div>
       <motion.p
@@ -113,7 +101,7 @@ function HeroCTA() {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.0, duration: 0.8 }}
       >
-        7 day free trial. No credit card required.
+        Ingen bindingstid. Ingen kredittkort nødvendig.
       </motion.p>
     </>
   );
@@ -131,16 +119,16 @@ function HeroImage() {
         animationStyle="from-center"
         videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
         thumbnailSrc="/dashboard.png"
-        thumbnailAlt="Hero Video"
+        thumbnailAlt="Fotovibe - Profesjonelt Bedriftsfoto og Video Tjenester"
         className="border rounded-lg shadow-lg max-w-screen-lg mt-16"
       />
     </motion.div>
   );
 }
 
-export default function Hero2() {
+export default function Hero() {
   return (
-    <section id="hero">
+    <section id="hero" aria-label="Bedriftsfoto og Video Tjenester">
       <div className="relative flex w-full flex-col items-center justify-start px-4 pt-32 sm:px-6 sm:pt-24 md:pt-32 lg:px-8">
         <HeroPill />
         <HeroTitles />

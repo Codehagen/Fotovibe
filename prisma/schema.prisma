@@ -436,3 +436,54 @@ model Zone {
   @@index([countryId])
   @@map(name: "zones")
 }
+
+// Add this new model for contact requests
+model ContactRequest {
+  id             String @id @default(cuid())
+  name           String
+  email          String
+  phone          String
+  // Company information from search
+  companyName    String
+  companyOrgnr   String
+  companyAddress String
+  companyZip     String
+  companyCity    String
+
+  // Request details
+  requestType RequestType // PHOTOGRAPHER, EDITOR, CLIENT
+  status      RequestStatus @default(PENDING)
+  notes       String?
+
+  // Tracking
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  reviewedAt DateTime?
+  reviewedBy String? // Admin user ID who reviewed
+  approvedAt DateTime?
+  rejectedAt DateTime?
+
+  // Photographer specific fields
+  experience   String? // For photographer experience
+  equipment    String? // For photography equipment
+  portfolio    String? // For portfolio URL
+  specialties  String[] // Photography specialties
+  availability String? // Availability preferences
+
+  @@index([status])
+  @@index([requestType])
+  @@index([companyOrgnr])
+  @@map(name: "contact_requests")
+}
+
+enum RequestType {
+  PHOTOGRAPHER
+  EDITOR
+  CLIENT
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
