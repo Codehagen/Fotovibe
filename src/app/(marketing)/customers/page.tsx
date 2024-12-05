@@ -3,10 +3,12 @@ import { Suspense } from "react";
 import { constructMetadata } from "@/lib/blog/constructMetadata";
 import { Customer } from "@/components/blog/customers";
 import MaxWidthWrapper from "@/components/blog/max-width-wrapper";
+import TestimonialsCarousel from "@/components/sections/testimonials-carousel";
+import Testimonials from "@/components/sections/testimonials";
 
 export const metadata = constructMetadata({
-  title: "Kunder - Propdock",
-  description: "Møt våre kunder og lær hvordan de bruker Propdock.",
+  title: "Kunder - Fotovibe",
+  description: "Møt våre kunder og lær hvordan de bruker Fotovibe.",
 });
 
 export default function Customers() {
@@ -16,14 +18,14 @@ export default function Customers() {
         <div className="mx-auto mb-10 sm:max-w-lg">
           <h1 className="font-display text-4xl font-extrabold text-black sm:text-5xl">
             Se våre{" "}
-            <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-primary to-blue-600 bg-clip-text text-transparent">
               kunder
             </span>
           </h1>
           <p className="mt-5 text-gray-600 sm:text-lg">
-            Propdock gir superkrefter til eiendomsforvaltere og eiere - fra
-            enkeltpersoner med én eiendom til store selskaper med omfattende
-            porteføljer.
+            Fotovibe gir bedrifter tilgang til profesjonell fotografering på
+            abonnement - fra små bedrifter til store selskaper med omfattende
+            behov for visuelt innhold.
           </p>
         </div>
         <div className="grid grid-cols-2 gap-5 py-5 md:grid-cols-4">
@@ -32,6 +34,8 @@ export default function Customers() {
           ))}
         </div>
       </MaxWidthWrapper>
+      <Testimonials />
+
       <Suspense>{/* <Testimonials /> */}</Suspense>
       {/* <CTA /> */}
     </>
@@ -45,6 +49,9 @@ const customers = [
   // },
   {
     slug: "corponor",
+  },
+  {
+    slug: "nordic-choice",
   },
   // {
   //   slug: "tinybird",

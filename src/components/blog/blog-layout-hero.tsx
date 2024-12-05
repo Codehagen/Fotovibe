@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useParams } from "next/navigation"
-import { motion } from "framer-motion"
-import { Check, List } from "lucide-react"
+import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { motion } from "framer-motion";
+import { Check, List } from "lucide-react";
 
-import { BLOG_CATEGORIES } from "@/lib/blog/content"
-import { cn } from "@/lib/utils"
+import { BLOG_CATEGORIES } from "@/lib/blog/content";
+import { cn } from "@/lib/utils";
 
-import MaxWidthWrapper from "./max-width-wrapper"
-import Popover from "./popover"
+import MaxWidthWrapper from "./max-width-wrapper";
+import Popover from "./popover";
 
 export default function BlogLayoutHero() {
-  const { slug } = useParams() as { slug?: string }
+  const { slug } = useParams() as { slug?: string };
 
-  const data = BLOG_CATEGORIES.find((category) => category.slug === slug)
+  const data = BLOG_CATEGORIES.find((category) => category.slug === slug);
 
-  const [openPopover, setOpenPopover] = useState(false)
+  const [openPopover, setOpenPopover] = useState(false);
 
   return (
     <>
@@ -28,7 +28,7 @@ export default function BlogLayoutHero() {
           </h1>
           <p className="mt-4 text-xl text-muted-foreground">
             {data?.description ||
-              "Siste nyheter og oppdateringer fra Propdock."}
+              "Siste nyheter og oppdateringer fra Fotovibe."}
           </p>
           <nav className="mt-6 hidden w-fit items-center space-x-2 rounded-full border border-border bg-background p-2 md:flex">
             <CategoryLink title="Oversikt" href="/blog" active={!slug} />
@@ -75,7 +75,7 @@ export default function BlogLayoutHero() {
       >
         <button
           onClick={() => {
-            setOpenPopover(!openPopover)
+            setOpenPopover(!openPopover);
           }}
           className="flex w-full items-center space-x-2 border-t border-border px-2.5 py-4 text-sm text-foreground"
         >
@@ -84,7 +84,7 @@ export default function BlogLayoutHero() {
         </button>
       </Popover>
     </>
-  )
+  );
 }
 
 const CategoryLink = ({
@@ -94,11 +94,11 @@ const CategoryLink = ({
   mobile,
   setOpenPopover,
 }: {
-  title: string
-  href: string
-  active?: boolean
-  mobile?: boolean
-  setOpenPopover?: (open: boolean) => void
+  title: string;
+  href: string;
+  active?: boolean;
+  mobile?: boolean;
+  setOpenPopover?: (open: boolean) => void;
 }) => {
   if (mobile) {
     return (
@@ -112,7 +112,7 @@ const CategoryLink = ({
         <p className="text-sm text-muted-foreground">{title}</p>
         {active && <Check size={16} className="text-muted-foreground" />}
       </Link>
-    )
+    );
   }
   return (
     <Link href={href} className="relative z-10">
@@ -121,7 +121,7 @@ const CategoryLink = ({
           "rounded-full px-4 py-2 text-sm transition-all",
           active
             ? "text-primary-foreground"
-            : "text-muted-foreground hover:bg-muted active:bg-muted/80",
+            : "text-muted-foreground hover:bg-muted active:bg-muted/80"
         )}
       >
         {title}
@@ -134,5 +134,5 @@ const CategoryLink = ({
         />
       )}
     </Link>
-  )
-}
+  );
+};

@@ -86,6 +86,10 @@ export const siteConfig = {
       },
     },
     {
+      href: "/customers",
+      label: "Kunder",
+    },
+    {
       href: "/priser",
       label: "Priser",
     },

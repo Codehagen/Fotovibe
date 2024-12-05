@@ -34,10 +34,10 @@ export const Customer = ({ slug, site }: { slug: string; site?: string }) => {
           className="max-h-16 grayscale transition-all group-hover:grayscale-0"
         />
         <div className="flex space-x-1">
-          <p className="text-sm font-medium text-gray-500 group-hover:text-green-500">
+          <p className="text-sm font-medium text-gray-500 group-hover:text-blue-600">
             {site ? "Besøk nettsted" : "Les mer"}
           </p>
-          <ExpandingArrow className="text-gray-500 group-hover:text-green-500" />
+          <ExpandingArrow className="text-gray-500 group-hover:text-blue-600" />
         </div>
       </Link>
     </Tilt>
