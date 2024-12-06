@@ -1,87 +1,57 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
 
-interface SubscriptionResponse {
-  subscription: {
-    name: string;
-    package: "basic" | "premium" | "enterprise";
-    amount: number;
-    isActive: boolean;
-  } | null;
-  usage: {
-    photosUsed: number;
-    videosUsed: number;
-    locationsUsed: number;
-  };
-  invoices: Array<{
-    id: string;
-    amount: number;
-    status: string;
-    dueDate: Date;
-    fikenId: string | null;
-  }>;
-}
-
-export async function getWorkspaceSubscription(workspaceId: string): Promise<{
-  success: boolean;
-  data?: SubscriptionResponse;
-  error?: string;
-}> {
+export async function getWorkspaceSubscription(workspaceId: string) {
   try {
-    console.log(
-      "Starting getWorkspaceSubscription for workspace:",
-      workspaceId
-    );
-
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized: No user found");
-    }
-
-    // Verify user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isSuperUser: true },
-    });
-
-    if (!user?.isSuperUser) {
-      throw new Error("Unauthorized: Admin access required");
-    }
-
-    // Get active subscription
-    const subscription = await prisma.subscription.findUnique({
+    const subscription = await prisma.subscription.findFirst({
       where: {
         workspaceId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            monthlyPrice: true,
+            yearlyMonthlyPrice: true,
+          },
+        },
+        isYearly: true,
+        currentPeriodEnd: true,
+        cancelAtPeriodEnd: true,
       },
     });
-    console.log("Found subscription:", subscription);
 
-    // Get current month's usage
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
+    // Get usage stats for current period
+    const currentDate = new Date();
+    const firstDayOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1
+    );
+    const lastDayOfMonth = new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth() + 1,
+      0
+    );
 
     const usage = await prisma.order.aggregate({
       where: {
         workspaceId,
         orderDate: {
-          gte: startOfMonth,
-        },
-        status: {
-          not: "CANCELLED",
+          gte: firstDayOfMonth,
+          lte: lastDayOfMonth,
         },
       },
       _sum: {
         photoCount: true,
         videoCount: true,
       },
-      _count: {
-        location: true,
-      },
+      _count: true,
     });
-    console.log("Current usage:", usage);
 
     // Get recent invoices
     const invoices = await prisma.invoice.findMany({
@@ -89,40 +59,28 @@ export async function getWorkspaceSubscription(workspaceId: string): Promise<{
         workspaceId,
       },
       orderBy: {
-        dueDate: "desc",
+        createdAt: "desc",
       },
-      take: 12, // Last 12 months
+      take: 10,
     });
-    console.log("Recent invoices:", invoices);
 
     return {
       success: true,
       data: {
-        subscription: subscription
-          ? {
-              name: subscription.name,
-              package: subscription.package as
-                | "basic"
-                | "premium"
-                | "enterprise",
-              amount: subscription.amount,
-              isActive: subscription.isActive,
-            }
-          : null,
+        subscription,
         usage: {
           photosUsed: usage._sum.photoCount || 0,
           videosUsed: usage._sum.videoCount || 0,
-          locationsUsed: usage._count.location || 0,
+          locationsUsed: usage._count || 0,
         },
         invoices,
       },
     };
   } catch (error) {
-    console.error("Error in getWorkspaceSubscription:", error);
+    console.error("Error fetching workspace subscription:", error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to fetch subscription",
+      error: "Failed to fetch subscription details",
     };
   }
 }

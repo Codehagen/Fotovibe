@@ -200,7 +200,7 @@ export async function getDashboardMetrics(): Promise<{
 
     // Get recent activities
     const recentActivities = await prisma.statusHistory.findMany({
-      take: 10,
+      take: 5,
       orderBy: {
         createdAt: "desc",
       },

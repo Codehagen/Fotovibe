@@ -1,0 +1,39 @@
+"use server";
+
+import { prisma } from "@/lib/db";
+import { getCurrentUser } from "../user/get-current-user";
+import { revalidatePath } from "next/cache";
+
+export async function reactivateWorkspaceSubscription(subscriptionId: string) {
+  try {
+    const user = await getCurrentUser();
+    if (!user?.isSuperUser) {
+      return {
+        success: false,
+        error: "Unauthorized",
+      };
+    }
+
+    await prisma.subscription.update({
+      where: {
+        id: subscriptionId,
+      },
+      data: {
+        cancelAtPeriodEnd: false,
+      },
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/workspaces/[id]");
+
+    return {
+      success: true,
+    };
+  } catch (error) {
+    console.error("Error reactivating subscription:", error);
+    return {
+      success: false,
+      error: "Failed to reactivate subscription",
+    };
+  }
+} 

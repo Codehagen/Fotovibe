@@ -1,4 +1,5 @@
-const { PrismaClient } = require("@prisma/client");
+import { PrismaClient } from "@prisma/client";
+import { SUBSCRIPTION_PLANS } from "../src/lib/subscription-plans";
 
 const prisma = new PrismaClient();
 
@@ -128,6 +129,35 @@ async function main() {
     });
 
     console.log(`Created/Updated zone: ${bodoZone.name}`);
+  }
+
+  // Create subscription plans
+  console.log("Creating subscription plans...");
+
+  for (const plan of SUBSCRIPTION_PLANS) {
+    const existingPlan = await prisma.plan.findFirst({
+      where: { name: plan.name },
+    });
+
+    if (!existingPlan) {
+      await prisma.plan.create({
+        data: {
+          id: plan.id,
+          name: plan.name,
+          monthlyPrice: plan.monthlyPrice,
+          yearlyMonthlyPrice: plan.yearlyMonthlyPrice,
+          currency: plan.currency,
+          photosPerMonth: plan.photosPerMonth,
+          videosPerMonth: plan.videosPerMonth,
+          maxLocations: plan.maxLocations,
+          features: JSON.stringify(plan.features), // Convert features array to JSON string
+          isActive: true,
+        },
+      });
+      console.log(`Created plan: ${plan.name}`);
+    } else {
+      console.log(`Plan already exists: ${plan.name}`);
+    }
   }
 
   console.log("Seed completed successfully!");
