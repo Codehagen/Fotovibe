@@ -7,11 +7,39 @@ export const runtime = "edge";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const postTitle = searchParams.get("title") || siteConfig.description;
+  const postTitle = searchParams.get("title");
+  const type = searchParams.get("type") || "default";
+
   const font = fetch(
     new URL("../../assets/fonts/Inter-SemiBold.ttf", import.meta.url)
   ).then((res) => res.arrayBuffer());
   const fontData = await font;
+
+  // Define different layouts based on content type
+  const layouts = {
+    blog: {
+      title: postTitle || "Blog",
+      subtitle: "FotoVibe Blog",
+    },
+    help: {
+      title: postTitle || "Help Center",
+      subtitle: "FotoVibe Documentation",
+    },
+    customers: {
+      title: postTitle || "Customer Stories",
+      subtitle: "FotoVibe Customer Success",
+    },
+    integrations: {
+      title: postTitle || "Integrations",
+      subtitle: "FotoVibe Integrations",
+    },
+    default: {
+      title: postTitle || siteConfig.description,
+      subtitle: siteConfig.name,
+    },
+  };
+
+  const layout = layouts[type as keyof typeof layouts] || layouts.default;
 
   return new ImageResponse(
     (
@@ -24,7 +52,6 @@ export async function GET(req: NextRequest) {
           alignItems: "center",
           justifyContent: "center",
           backgroundColor: "#fff",
-          // set background image if needed
           backgroundImage: `url(${siteConfig.url}/og.png)`,
           fontSize: 32,
           fontWeight: 600,
@@ -57,10 +84,10 @@ export async function GET(req: NextRequest) {
               marginTop: "24px",
               textAlign: "center",
               width: "80%",
-              letterSpacing: "-0.05em", // Added tighter tracking
+              letterSpacing: "-0.05em",
             }}
           >
-            {postTitle}
+            {layout.title}
           </div>
           <div
             style={{
@@ -71,23 +98,25 @@ export async function GET(req: NextRequest) {
               color: "#808080",
             }}
           >
-            {siteConfig.name}
+            {layout.subtitle}
           </div>
         </div>
 
-        <img
-          src={`${siteConfig.url}/dashboard.png`}
-          width={900}
-          style={{
-            position: "relative",
-            bottom: -160,
-            aspectRatio: "auto",
-            border: "4px solid lightgray",
-            background: "lightgray",
-            borderRadius: 20,
-            zIndex: 1,
-          }}
-        />
+        {type === "default" && (
+          <img
+            src={`${siteConfig.url}/_static/thumbnail.png`}
+            width={900}
+            style={{
+              position: "relative",
+              bottom: -160,
+              aspectRatio: "auto",
+              border: "4px solid lightgray",
+              background: "lightgray",
+              borderRadius: 20,
+              zIndex: 1,
+            }}
+          />
+        )}
       </div>
     ),
     {
