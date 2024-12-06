@@ -103,13 +103,12 @@ export function CreateWorkspaceOrder({
         form.reset();
         router.refresh();
       } else {
-        if (Array.isArray(orderResult.error)) {
-          const errorMessage = orderResult.error
-            .map((err) => err.message)
-            .join(", ");
-          toast.error(errorMessage);
+        if (typeof orderResult.error === "string") {
+          toast.error(orderResult.error);
+        } else if (Array.isArray(orderResult.error)) {
+          toast.error(orderResult.error.join(", "));
         } else {
-          toast.error(orderResult.error as string);
+          toast.error("Noe gikk galt");
         }
       }
     } catch (error) {

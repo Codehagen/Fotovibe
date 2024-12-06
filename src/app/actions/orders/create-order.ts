@@ -3,49 +3,51 @@
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "../user/get-current-user";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
-import { createFikenInvoice } from "@/lib/fiken";
-import { Order } from "@prisma/client";
+import { OrderStatus } from "@prisma/client";
 
-const createOrderSchema = z.object({
-  workspaceId: z.string(),
-  photographerId: z.string().optional(),
-  location: z.string(),
-  scheduledDate: z.string(),
-  requirements: z.string().optional(),
-  photoCount: z.number().optional(),
-  videoCount: z.number().optional(),
-});
+interface CreateOrderInput {
+  workspaceId: string;
+  location: string;
+  scheduledDate: string;
+  requirements?: string;
+  photoCount?: number;
+  videoCount?: number;
+}
 
-export async function createOrder(input: z.infer<typeof createOrderSchema>) {
+interface CreateOrderResult {
+  success: boolean;
+  error?: string;
+  order?: any;
+}
+
+export async function createOrder(
+  input: CreateOrderInput
+): Promise<CreateOrderResult> {
   try {
     const user = await getCurrentUser();
-    if (!user?.isSuperUser) {
+    if (!user) {
       return {
         success: false,
         error: "Unauthorized",
       };
     }
 
-    const validatedFields = createOrderSchema.parse(input);
-
-    // Create order with checklists in a transaction
+    // Create the order with a transaction to ensure all related records are created
     const order = await prisma.$transaction(async (tx) => {
-      // Create the order
-      const newOrder = await tx.order.create({
+      return tx.order.create({
         data: {
-          workspaceId: validatedFields.workspaceId,
-          photographerId: validatedFields.photographerId,
-          status: "PENDING_PHOTOGRAPHER",
+          workspaceId: input.workspaceId,
+          photographerId: undefined,
+          status: OrderStatus.PENDING_PHOTOGRAPHER,
           orderDate: new Date(),
-          scheduledDate: new Date(validatedFields.scheduledDate),
-          location: validatedFields.location,
-          requirements: validatedFields.requirements,
-          photoCount: validatedFields.photoCount,
-          videoCount: validatedFields.videoCount,
+          scheduledDate: new Date(input.scheduledDate),
+          location: input.location,
+          requirements: input.requirements,
+          photoCount: input.photoCount || 0,
+          videoCount: input.videoCount || 0,
           statusHistory: {
             create: {
-              status: "PENDING_PHOTOGRAPHER",
+              status: OrderStatus.PENDING_PHOTOGRAPHER,
               changedBy: user.id,
               notes: "Ordre opprettet av admin",
             },
@@ -76,10 +78,20 @@ export async function createOrder(input: z.infer<typeof createOrderSchema>) {
               subscriptions: {
                 where: {
                   isActive: true,
-                  OR: [{ endDate: null }, { endDate: { gt: new Date() } }],
+                  OR: [
+                    {
+                      endDate: null,
+                    },
+                    {
+                      endDate: {
+                        gt: new Date(),
+                      },
+                    },
+                  ],
                 },
                 include: {
-                  Plan: true,
+                  plan: true,
+                  workspace: true,
                 },
                 orderBy: {
                   startDate: "desc",
@@ -90,64 +102,16 @@ export async function createOrder(input: z.infer<typeof createOrderSchema>) {
           },
         },
       });
-
-      // Calculate invoice amount based on subscription
-      const subscription = newOrder.workspace.subscriptions[0];
-      if (!subscription) {
-        throw new Error("No active subscription found for workspace");
-      }
-
-      // Calculate invoice amount
-      let totalAmount = subscription.amount;
-
-      // Add extra charges if order exceeds subscription limits
-      if (subscription.Plan) {
-        if (
-          validatedFields.photoCount &&
-          validatedFields.photoCount > subscription.Plan.photosPerMonth
-        ) {
-          const extraPhotos =
-            validatedFields.photoCount - subscription.Plan.photosPerMonth;
-          totalAmount += extraPhotos * 100; // 100 NOK per extra photo
-        }
-
-        if (
-          validatedFields.videoCount &&
-          subscription.Plan.videosPerMonth &&
-          validatedFields.videoCount > subscription.Plan.videosPerMonth
-        ) {
-          const extraVideos =
-            validatedFields.videoCount - subscription.Plan.videosPerMonth;
-          totalAmount += extraVideos * 500; // 500 NOK per extra video
-        }
-      }
-
-      // Create invoice in Fiken first
-      const fikenResult = await createFikenInvoice({
-        orderId: newOrder.id,
-        workspaceId: newOrder.workspaceId,
-        amount: totalAmount,
-        dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        description: `Fotovibe oppdrag - ${newOrder.location}\nOrdre ID: ${newOrder.id}`,
-      });
-
-      // Create invoice in our database
-      await tx.invoice.create({
-        data: {
-          orderId: newOrder.id,
-          workspaceId: newOrder.workspaceId,
-          amount: totalAmount,
-          status: "SENT",
-          fikenId: fikenResult.fikenId,
-          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-        },
-      });
-
-      return newOrder;
     });
 
     revalidatePath("/admin");
-    return { success: true, data: order };
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/workspaces/${input.workspaceId}`);
+
+    return {
+      success: true,
+      order,
+    };
   } catch (error) {
     console.error("Error creating order:", error);
     return {
