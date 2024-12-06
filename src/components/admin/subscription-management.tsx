@@ -2,6 +2,7 @@
 
 import { SubscriptionStatusBanner } from "./subscription-status-banner";
 import { cancelWorkspaceSubscription } from "@/app/actions/admin/cancel-workspace-subscription";
+import { updateWorkspaceSubscription } from "@/app/actions/admin/update-workspace-subscription";
 import { toast } from "sonner";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,8 +11,12 @@ import { reactivateWorkspaceSubscription } from "@/app/actions/admin/reactivate-
 interface SubscriptionManagementProps {
   subscription: {
     id: string;
+    workspaceId: string;
     plan: {
+      id: string;
       name: string;
+      monthlyPrice: number;
+      yearlyMonthlyPrice: number;
     };
     isYearly: boolean;
     currentPeriodEnd: Date;
@@ -63,11 +68,37 @@ export function SubscriptionManagement({
     }
   };
 
+  const handleUpdateBillingCycle = async (isYearly: boolean) => {
+    try {
+      setIsLoading(true);
+      const result = await updateWorkspaceSubscription(
+        subscription.workspaceId,
+        subscription.plan.id,
+        isYearly
+      );
+
+      if (result.success) {
+        toast.success(
+          `Endret til ${isYearly ? "årlig" : "månedlig"} fakturering`
+        );
+        router.refresh();
+      } else {
+        toast.error(result.error || "Kunne ikke endre faktureringssyklus");
+      }
+    } catch (error) {
+      toast.error("Kunne ikke endre faktureringssyklus");
+      console.error("Error updating billing cycle:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SubscriptionStatusBanner
       subscription={subscription}
       onCancelSubscription={handleCancelSubscription}
       onReactivateSubscription={handleReactivateSubscription}
+      onUpdateBillingCycle={handleUpdateBillingCycle}
       isLoading={isLoading}
     />
   );

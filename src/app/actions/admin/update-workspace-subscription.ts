@@ -24,6 +24,18 @@ export async function updateWorkspaceSubscription(
       };
     }
 
+    // Verify the workspace exists
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      return {
+        success: false,
+        error: "Workspace not found",
+      };
+    }
+
     // First verify the plan exists
     const plan = await prisma.plan.findUnique({
       where: { id: planId },
@@ -39,7 +51,13 @@ export async function updateWorkspaceSubscription(
     // Calculate period dates
     const startDate = new Date();
     const currentPeriodEnd = new Date();
-    currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+
+    // Set period end based on billing cycle
+    if (isYearly) {
+      currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
+    } else {
+      currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+    }
 
     // Use a transaction to ensure data consistency
     const subscription = await prisma.$transaction(async (tx) => {
@@ -58,12 +76,8 @@ export async function updateWorkspaceSubscription(
       // Then create the new subscription
       return tx.subscription.create({
         data: {
-          workspace: {
-            connect: { id: workspaceId },
-          },
-          plan: {
-            connect: { id: planId },
-          },
+          workspaceId,
+          planId,
           isActive: true,
           isYearly,
           startDate,

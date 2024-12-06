@@ -11,6 +11,8 @@ export async function getWorkspaceSubscription(workspaceId: string) {
       },
       select: {
         id: true,
+        workspaceId: true,
+        customMonthlyPrice: true,
         plan: {
           select: {
             id: true,

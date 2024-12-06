@@ -19,19 +19,27 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import { formatPrice } from "@/lib/subscription-plans";
+import { UpdateSubscriptionPriceDialog } from "./update-subscription-price-dialog";
 
 interface SubscriptionStatusBannerProps {
   subscription: {
     id: string;
+    workspaceId: string;
     plan: {
+      id: string;
       name: string;
+      monthlyPrice: number;
+      yearlyMonthlyPrice: number;
     };
     isYearly: boolean;
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
+    customMonthlyPrice?: number | null;
   };
   onCancelSubscription: () => Promise<void>;
   onReactivateSubscription: () => Promise<void>;
+  onUpdateBillingCycle: (isYearly: boolean) => Promise<void>;
   isLoading: boolean;
 }
 
@@ -39,6 +47,7 @@ export function SubscriptionStatusBanner({
   subscription,
   onCancelSubscription,
   onReactivateSubscription,
+  onUpdateBillingCycle,
   isLoading,
 }: SubscriptionStatusBannerProps) {
   const handleCancel = async () => {
@@ -48,6 +57,19 @@ export function SubscriptionStatusBanner({
       console.error("Error in subscription banner:", error);
     }
   };
+
+  const handleBillingCycleChange = async (checked: boolean) => {
+    try {
+      await onUpdateBillingCycle(checked);
+    } catch (error) {
+      console.error("Error updating billing cycle:", error);
+      toast.error("Kunne ikke oppdatere faktureringssyklus");
+    }
+  };
+
+  const currentPrice = subscription.isYearly
+    ? subscription.plan.yearlyMonthlyPrice
+    : subscription.plan.monthlyPrice;
 
   return (
     <div className="rounded-lg border bg-card p-4">
@@ -68,6 +90,7 @@ export function SubscriptionStatusBanner({
           <div className="mt-1 text-sm text-muted-foreground">
             <p>Nåværende plan: {subscription.plan.name}</p>
             <p>Fakturering: {subscription.isYearly ? "Årlig" : "Månedlig"}</p>
+            <p>Pris per måned: {formatPrice(currentPrice)}</p>
             <p>
               {subscription.cancelAtPeriodEnd ? "Avsluttes" : "Neste faktura"}:{" "}
               {format(new Date(subscription.currentPeriodEnd), "d.M.yyyy", {
@@ -82,16 +105,17 @@ export function SubscriptionStatusBanner({
           </div>
         </div>
         <div className="flex flex-col items-end gap-4">
-          <div className="flex items-center">
+          <div className="flex items-center gap-2">
             <Switch
               id="yearly-billing"
               checked={subscription.isYearly}
-              onCheckedChange={() => {}}
-              disabled
+              onCheckedChange={handleBillingCycleChange}
+              disabled={isLoading}
             />
             <Label htmlFor="yearly-billing" className="ml-2">
               Årlig fakturering (2 måneder gratis)
             </Label>
+            <UpdateSubscriptionPriceDialog subscription={subscription} />
           </div>
           {subscription.cancelAtPeriodEnd ? (
             <Button

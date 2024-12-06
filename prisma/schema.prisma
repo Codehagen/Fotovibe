@@ -121,6 +121,7 @@ model Subscription {
   plan               Plan      @relation(fields: [planId], references: [id])
   isYearly           Boolean   @default(false)
   isActive           Boolean   @default(true)
+  customMonthlyPrice Float? // Custom price per month if special deal
   startDate          DateTime  @default(now())
   endDate            DateTime?
   currentPeriodStart DateTime  @default(now())
