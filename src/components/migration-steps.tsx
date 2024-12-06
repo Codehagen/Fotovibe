@@ -8,7 +8,7 @@ import Image from "next/image";
 
 export function MigrationSteps() {
   return (
-    <div className="container px-4 py-24 md:py-32 bg-background">
+    <div className="container px-4 py-24 md:py-12 bg-background">
       <div className="text-center space-y-8 mb-16">
         <div className="space-y-4">
           <h2 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
