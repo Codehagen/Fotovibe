@@ -4,6 +4,7 @@ import { HelpCircle, Check, X } from "lucide-react";
 import { TestimonialSlider } from "@/components/sections/testimonials-slider";
 import { ProductComparisonSlider } from "@/components/product-comparison-slider";
 import Link from "next/link";
+import { MigrationSteps } from "@/components/migration-steps";
 
 export const metadata = {
   title: "FotoVibe vs Competition | Compare Photo Sharing Platforms",
@@ -102,15 +103,15 @@ function ComparisonHeader() {
           alt={`${PRODUCTS.fotovibe.name} Logo`}
           width={140}
           height={140}
-          className="rounded-xl shadow-lg"
+          className="rounded-xl shadow-lg bg-card"
         />
         <div className="flex flex-col items-center">
-          <h1 className="text-5xl font-bold text-gray-800 md:text-6xl">
+          <h1 className="text-5xl font-bold text-foreground md:text-6xl">
             {PRODUCTS.fotovibe.name}
-            <span className="mx-2 text-gray-600">vs</span>
+            <span className="mx-2 text-muted-foreground">vs</span>
             {PRODUCTS.competitor.name}
           </h1>
-          <p className="mt-4 max-w-[400px] text-gray-600">
+          <p className="mt-4 max-w-[400px] text-muted-foreground">
             Se hvordan {PRODUCTS.fotovibe.name} gjør det enklere å få
             profesjonelle bilder sammenlignet med {PRODUCTS.competitor.name}, og
             hvorfor vi er det beste valget for din bedrift.
@@ -121,17 +122,21 @@ function ComparisonHeader() {
           alt={`${PRODUCTS.competitor.name} Logo`}
           width={140}
           height={140}
-          className="rounded-xl shadow-lg"
+          className="rounded-xl shadow-lg bg-card"
         />
       </div>
       <div className="mt-10 flex flex-col space-y-4 md:flex-row md:space-x-4 md:space-y-0">
-        <Button size="lg" className="rounded-full" asChild>
+        <Button
+          size="lg"
+          className="rounded-full bg-primary text-primary-foreground"
+          asChild
+        >
           <Link href="/sign-up">Start nå</Link>
         </Button>
         <Button
           variant="outline"
           size="lg"
-          className="rounded-full border-gray-300"
+          className="rounded-full border-border hover:bg-accent hover:text-accent-foreground"
           asChild
         >
           <Link href="/customers">Les kundehistorier</Link>
@@ -211,7 +216,7 @@ function ComparisonTable() {
 
 export default function ComparePage() {
   return (
-    <main className="flex-1 bg-gradient-to-br from-purple-50 via-white to-green-50">
+    <main className="flex-1 bg-background">
       <section className="container px-4 py-32 md:py-40">
         <ComparisonHeader />
       </section>
@@ -261,6 +266,10 @@ export default function ComparePage() {
 
       <section className="container px-4 py-32 md:py-40">
         <TestimonialSlider />
+      </section>
+
+      <section className="container px-4">
+        <MigrationSteps />
       </section>
     </main>
   );

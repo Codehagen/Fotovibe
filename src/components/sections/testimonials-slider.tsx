@@ -22,10 +22,10 @@ const testimonials: Testimonial[] = [
     id: 1,
     logo: "https://avatar.vercel.sh/fotovibe",
     quote:
-      "FotoVibe has transformed how we manage and share our photography. The platform's intuitive interface and powerful features have made our workflow significantly more efficient.",
+      "FotoVibe har transformert hvordan vi håndterer bilder. Plattformen er intuitiv og funksjonene har gjort arbeidsflyten vår betydelig mer effektiv.",
     author: {
       name: "Maria Nordmann",
-      title: "Professional Photographer",
+      title: "Profesjonell Fotograf",
       image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
     },
   },
@@ -93,17 +93,17 @@ export function TestimonialSlider() {
         <div className="flex">
           {testimonials.map((testimonial) => (
             <div key={testimonial.id} className="flex-[0_0_100%] min-w-0">
-              <div className="grid items-center justify-between rounded-xl border bg-background/60 backdrop-blur-xl md:grid-cols-2">
+              <div className="grid items-center justify-between rounded-xl border bg-card text-card-foreground md:grid-cols-2">
                 <div className="order-2 flex flex-col gap-y-5 p-7 md:order-1 lg:p-10">
                   <Image
                     src={testimonial.logo}
                     alt="Company logo"
                     width={80}
                     height={32}
-                    className="mb-4 rounded-lg"
+                    className="mb-4 rounded-lg bg-muted"
                   />
                   <div className="space-y-2">
-                    <blockquote className="text-xl font-medium tracking-tight text-gray-900">
+                    <blockquote className="text-xl font-medium tracking-tight text-foreground">
                       {testimonial.quote}
                     </blockquote>
                   </div>
@@ -115,11 +115,11 @@ export function TestimonialSlider() {
                     fill
                     className="object-cover object-center"
                   />
-                  <div className="absolute bottom-6 left-6 right-6 bg-white/90 backdrop-blur-sm rounded-xl p-4">
-                    <div className="font-semibold text-lg">
+                  <div className="absolute bottom-6 left-6 right-6 bg-card/90 backdrop-blur-sm rounded-xl p-4">
+                    <div className="font-semibold text-foreground">
                       {testimonial.author.name}
                     </div>
-                    <div className="text-gray-600 text-sm">
+                    <div className="text-sm text-muted-foreground">
                       {testimonial.author.title}
                     </div>
                   </div>
@@ -142,7 +142,7 @@ export function TestimonialSlider() {
             <div
               className={cn(
                 "w-2 h-2 rounded-full transition-colors",
-                index === selectedIndex ? "bg-primary" : "bg-gray-300"
+                index === selectedIndex ? "bg-primary" : "bg-muted"
               )}
             />
             <span className="sr-only">Go to slide {index + 1}</span>

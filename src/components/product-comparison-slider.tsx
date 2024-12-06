@@ -58,7 +58,7 @@ export function ProductComparisonSlider({
 
   return (
     <div className="mx-auto max-w-4xl px-4">
-      <div className="rounded-lg border bg-background/60 backdrop-blur-xl p-6 shadow-sm">
+      <div className="rounded-lg border bg-card p-6 shadow-sm">
         {/* Top navigation bar */}
         <div className="mb-6 flex items-center justify-between border-b pb-4">
           <div className="text-xl font-semibold">{leftProduct.name}</div>
