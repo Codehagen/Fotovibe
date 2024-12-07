@@ -54,10 +54,11 @@ interface WorkspacePageProps {
   };
 }
 
-interface WorkspaceSubscription {
+interface SubscriptionData {
   id: string;
-  planId: string;
+  workspaceId: string;
   plan: {
+    id: string;
     name: string;
     monthlyPrice: number;
     yearlyMonthlyPrice: number;
@@ -66,6 +67,21 @@ interface WorkspaceSubscription {
   isActive: boolean;
   startDate: Date;
   currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+}
+
+interface WorkspaceSubscriptionData {
+  success: boolean;
+  error?: string;
+  data: {
+    subscription: SubscriptionData | null;
+    usage: {
+      photosUsed: number;
+      videosUsed: number;
+      locationsUsed: number;
+    };
+    invoices: any[];
+  };
 }
 
 interface WorkspaceWithCounts {
@@ -84,6 +100,7 @@ interface WorkspaceWithCounts {
   _count: {
     users: number;
     orders: number;
+    locationsUsed: number;
   };
   subscriptions: Array<{
     id: string;
@@ -118,8 +135,14 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     return <div>Error: {error}</div>;
   }
 
+  const subscriptionResponse = await getWorkspaceSubscription(params.id);
+  console.log("Subscription Response:", subscriptionResponse);
+
   const { success: subscriptionSuccess, data: subscriptionData } =
-    await getWorkspaceSubscription(params.id);
+    subscriptionResponse as WorkspaceSubscriptionData;
+
+  console.log("Subscription Success:", subscriptionSuccess);
+  console.log("Subscription Data:", subscriptionData);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -395,11 +418,12 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         </TabsContent>
 
         <TabsContent value="subscription" className="space-y-4">
-          {/* Current Subscription Status Banner */}
-          {subscriptionData?.subscription && (
+          {subscriptionSuccess && subscriptionData?.subscription ? (
             <SubscriptionManagement
               subscription={subscriptionData.subscription}
             />
+          ) : (
+            <SubscriptionSummary workspaceId={workspace.id} />
           )}
 
           {/* Subscription Plans */}
@@ -603,7 +627,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                     </h4>
                   </div>
                   <p className="text-2xl font-bold">
-                    {subscriptionData?.usage.photosUsed || 0}
+                    {subscriptionData?.usage?.photosUsed ?? 0}
                   </p>
                 </div>
 
@@ -615,7 +639,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                     </h4>
                   </div>
                   <p className="text-2xl font-bold">
-                    {subscriptionData?.usage.videosUsed || 0}
+                    {subscriptionData?.usage?.videosUsed ?? 0}
                   </p>
                 </div>
 
@@ -627,7 +651,7 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                     </h4>
                   </div>
                   <p className="text-2xl font-bold">
-                    {subscriptionData?.usage.locationsUsed || 0}
+                    {subscriptionData?.usage?.locationsUsed ?? 0}
                   </p>
                 </div>
               </div>

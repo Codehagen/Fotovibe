@@ -1,173 +1,151 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, CheckCircle2, AlertCircle } from "lucide-react";
-import { formatPrice } from "@/lib/subscription-plans";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { createSubscription } from "@/app/actions/admin/create-subscription";
 import { Button } from "@/components/ui/button";
-import { UpdateSubscriptionPriceDialog } from "./update-subscription-price-dialog";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+import { createDefaultPlans } from "@/app/actions/admin/create-plan";
 
 interface SubscriptionSummaryProps {
-  subscription: {
-    id: string;
-    workspaceId: string;
-    plan: {
-      name: string;
-      monthlyPrice: number;
-      yearlyMonthlyPrice: number;
-    };
-    isYearly: boolean;
-    currentPeriodEnd: Date;
-    cancelAtPeriodEnd: boolean;
-    customMonthlyPrice?: number | null;
-  };
-  onCancelSubscription: () => Promise<void>;
-  onReactivateSubscription: () => Promise<void>;
-  onUpdateBillingCycle: (isYearly: boolean) => Promise<void>;
-  isLoading: boolean;
+  workspaceId: string;
 }
 
-export function SubscriptionSummary({
-  subscription,
-  onCancelSubscription,
-  onReactivateSubscription,
-  onUpdateBillingCycle,
-  isLoading,
-}: SubscriptionSummaryProps) {
-  const currentPrice =
-    subscription.customMonthlyPrice ||
-    (subscription.isYearly
-      ? subscription.plan.yearlyMonthlyPrice
-      : subscription.plan.monthlyPrice);
+export function SubscriptionSummary({ workspaceId }: SubscriptionSummaryProps) {
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleCancel = async () => {
+  const handleCreateSubscription = async (planName: string) => {
     try {
-      await onCancelSubscription();
-    } catch (error) {
-      console.error("Error in subscription banner:", error);
-    }
-  };
+      setIsLoading(true);
 
-  const handleBillingCycleChange = async (checked: boolean) => {
-    try {
-      await onUpdateBillingCycle(checked);
+      // Create default plans if they don't exist
+      const plansResult = await createDefaultPlans();
+      console.log("Plans creation result:", plansResult);
+
+      const result = await createSubscription({
+        workspaceId,
+        planId: planName, // This should match exactly with the plan name in DB
+        isYearly: false,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
+      toast.success("Abonnement opprettet");
+      window.location.reload(); // Reload to show new subscription
     } catch (error) {
-      console.error("Error updating billing cycle:", error);
+      toast.error("Kunne ikke opprette abonnement");
+      console.error(error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
-              {subscription.cancelAtPeriodEnd ? (
-                <AlertCircle className="h-5 w-5 text-yellow-500" />
-              ) : (
-                <CheckCircle2 className="h-5 w-5 text-primary" />
-              )}
-              <span className="text-xl font-bold">
-                {subscription.cancelAtPeriodEnd
-                  ? "Abonnement avsluttes"
-                  : "Aktivt abonnement"}
-              </span>
-            </div>
-            <div className="mt-4 space-y-1 text-base text-muted-foreground">
-              <p>Nåværende plan: {subscription.plan.name}</p>
-              <p>Fakturering: {subscription.isYearly ? "Årlig" : "Månedlig"}</p>
-              <p>Pris per måned: {formatPrice(currentPrice)}</p>
-              <p>
-                {subscription.cancelAtPeriodEnd ? "Avsluttes" : "Neste faktura"}
-                :{" "}
-                {format(new Date(subscription.currentPeriodEnd), "d.M.yyyy", {
-                  locale: nb,
-                })}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-4">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center">
-                <Switch
-                  id="yearly-billing"
-                  checked={subscription.isYearly}
-                  onCheckedChange={handleBillingCycleChange}
-                  disabled={isLoading}
-                />
-                <Label htmlFor="yearly-billing" className="ml-2">
-                  Årlig fakturering (2 måneder gratis)
-                </Label>
-              </div>
-              <UpdateSubscriptionPriceDialog subscription={subscription} />
-            </div>
-            {subscription.cancelAtPeriodEnd ? (
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-primary"
-                onClick={onReactivateSubscription}
-                disabled={isLoading}
-              >
-                {isLoading ? "Reaktiverer..." : "Reaktiver abonnement"}
-              </Button>
-            ) : (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="text-destructive"
-                  >
-                    Avslutt abonnement
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Er du sikker?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Dette vil avslutte abonnementet ved slutten av inneværende
-                      periode (
-                      {format(
-                        new Date(subscription.currentPeriodEnd),
-                        "d. MMMM yyyy",
-                        {
-                          locale: nb,
-                        }
-                      )}
-                      ). Bedriften vil ikke lenger ha tilgang til tjenesten
-                      etter denne datoen.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Avbryt</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleCancel}
-                      disabled={isLoading}
-                      className="bg-destructive hover:bg-destructive/90"
-                    >
-                      {isLoading ? "Avslutter..." : "Avslutt abonnement"}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
+    <Card className="border-destructive">
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-5 w-5 text-destructive" />
+          <CardTitle>Ingen aktivt abonnement</CardTitle>
         </div>
+        <CardDescription>
+          Dette arbeidsområdet har ingen aktivt abonnement. Velg en plan under
+          for å aktivere tjenesten.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid gap-6 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Basic</CardTitle>
+            <CardDescription>10.000 kr / mnd</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center">
+                <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                Opptil 5 brukere
+              </li>
+              <li className="flex items-center">
+                <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                10 oppdrag per måned
+              </li>
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full"
+              onClick={() => handleCreateSubscription("Basic")}
+              disabled={isLoading}
+            >
+              Velg Basic
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Pro</CardTitle>
+            <CardDescription>15.000 kr / mnd</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center">
+                <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                Opptil 15 brukere
+              </li>
+              <li className="flex items-center">
+                <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                30 oppdrag per måned
+              </li>
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full"
+              onClick={() => handleCreateSubscription("Pro")}
+              disabled={isLoading}
+            >
+              Velg Pro
+            </Button>
+          </CardFooter>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Enterprise</CardTitle>
+            <CardDescription>20.000 kr / mnd</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2 text-sm">
+              <li className="flex items-center">
+                <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                Ubegrenset brukere
+              </li>
+              <li className="flex items-center">
+                <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                Ubegrenset oppdrag
+              </li>
+            </ul>
+          </CardContent>
+          <CardFooter>
+            <Button
+              className="w-full"
+              onClick={() => handleCreateSubscription("Enterprise")}
+              disabled={isLoading}
+            >
+              Velg Enterprise
+            </Button>
+          </CardFooter>
+        </Card>
       </CardContent>
     </Card>
   );
