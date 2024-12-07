@@ -47,6 +47,7 @@ import { CreateWorkspaceOrder } from "@/components/admin/create-workspace-order"
 import { formatPrice } from "@/lib/subscription-plans";
 import { SubscriptionManagement } from "@/components/admin/subscription-management";
 import { SubscriptionSummary } from "@/components/admin/subscription-summary";
+import { SubscriptionPlanButton } from "@/components/admin/subscription-plan-button";
 
 interface WorkspacePageProps {
   params: {
@@ -468,29 +469,26 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button
-                  className="w-full"
-                  variant={
-                    subscriptionData?.subscription?.plan.name === "Basic"
-                      ? "outline"
-                      : "default"
+                <SubscriptionPlanButton
+                  workspaceId={workspace.id}
+                  planName="Basic"
+                  currentPlan={
+                    subscriptionData?.subscription?.plan.name ?? null
                   }
-                  disabled={
-                    subscriptionData?.subscription?.plan.name === "Basic"
-                  }
-                >
-                  {subscriptionData?.subscription?.plan.name === "Basic"
-                    ? "Nåværende plan"
-                    : "Velg denne planen"}
-                </Button>
+                  subscriptionId={subscriptionData?.subscription?.id}
+                />
               </CardFooter>
+              {subscriptionData?.subscription?.plan.name === "Basic" && (
+                <div className="absolute -top-2 -right-2 rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground">
+                  Nåværende plan
+                </div>
+              )}
             </Card>
 
             <Card
               className={cn(
                 "relative",
                 subscriptionData?.subscription?.plan.name === "Pro" &&
-                  !subscriptionData?.subscription?.cancelAtPeriodEnd &&
                   "border-primary"
               )}
             >
@@ -527,25 +525,18 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button
-                  className="w-full"
-                  variant={
-                    subscriptionData?.subscription?.plan.name === "Pro"
-                      ? "outline"
-                      : "default"
+                <SubscriptionPlanButton
+                  workspaceId={workspace.id}
+                  planName="Pro"
+                  currentPlan={
+                    subscriptionData?.subscription?.plan.name ?? null
                   }
-                  disabled={subscriptionData?.subscription?.plan.name === "Pro"}
-                >
-                  {subscriptionData?.subscription?.plan.name === "Pro"
-                    ? "Nåværende plan"
-                    : "Velg denne planen"}
-                </Button>
+                  subscriptionId={subscriptionData?.subscription?.id}
+                />
               </CardFooter>
               {subscriptionData?.subscription?.plan.name === "Pro" && (
                 <div className="absolute -top-2 -right-2 rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground">
-                  {subscriptionData.subscription.cancelAtPeriodEnd
-                    ? "Avsluttes"
-                    : "Nåværende plan"}
+                  Nåværende plan
                 </div>
               )}
             </Card>
@@ -590,21 +581,14 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button
-                  className="w-full"
-                  variant={
-                    subscriptionData?.subscription?.plan.name === "Enterprise"
-                      ? "outline"
-                      : "default"
+                <SubscriptionPlanButton
+                  workspaceId={workspace.id}
+                  planName="Enterprise"
+                  currentPlan={
+                    subscriptionData?.subscription?.plan.name ?? null
                   }
-                  disabled={
-                    subscriptionData?.subscription?.plan.name === "Enterprise"
-                  }
-                >
-                  {subscriptionData?.subscription?.plan.name === "Enterprise"
-                    ? "Nåværende plan"
-                    : "Velg denne planen"}
-                </Button>
+                  subscriptionId={subscriptionData?.subscription?.id}
+                />
               </CardFooter>
             </Card>
           </div>

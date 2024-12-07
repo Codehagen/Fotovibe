@@ -90,7 +90,7 @@ export function SubscriptionStatusBanner({
           <div className="mt-1 text-sm text-muted-foreground">
             <p>Nåværende plan: {subscription.plan.name}</p>
             <p>Fakturering: {subscription.isYearly ? "Årlig" : "Månedlig"}</p>
-            <p>Pris per måned: {formatPrice(currentPrice)}</p>
+            <p>Pris per måned: {currentPrice}</p>
             <p>
               {subscription.cancelAtPeriodEnd ? "Avsluttes" : "Neste faktura"}:{" "}
               {format(new Date(subscription.currentPeriodEnd), "d.M.yyyy", {
