@@ -46,6 +46,7 @@ import { cn } from "@/lib/utils";
 import { CreateWorkspaceOrder } from "@/components/admin/create-workspace-order";
 import { formatPrice } from "@/lib/subscription-plans";
 import { SubscriptionManagement } from "@/components/admin/subscription-management";
+import { SubscriptionSummary } from "@/components/admin/subscription-summary";
 
 interface WorkspacePageProps {
   params: {
@@ -134,6 +135,15 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          {/* Subscription Summary - Full Width */}
+          {subscriptionSuccess && subscriptionData?.subscription && (
+            <div className="grid gap-4">
+              <SubscriptionManagement
+                subscription={subscriptionData.subscription}
+              />
+            </div>
+          )}
+
           {/* Key Metrics */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>

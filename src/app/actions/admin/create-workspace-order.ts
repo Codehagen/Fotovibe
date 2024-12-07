@@ -4,13 +4,13 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "../user/get-current-user";
 import { createOrder } from "../orders/create-order";
 import { revalidatePath } from "next/cache";
+import { OrderStatus } from "@prisma/client";
 
 interface CreateWorkspaceOrderInput {
-  location: string;
-  scheduledDate: Date;
+  packageType: "BASIC" | "PRO" | "ENTERPRISE";
+  packagePrice: number;
+  yearlyPackagePrice: number;
   requirements?: string;
-  photoCount?: number;
-  videoCount?: number;
 }
 
 interface CreateWorkspaceOrderResult {
@@ -72,65 +72,25 @@ export async function createWorkspaceOrder(
       yearlyMonthlyPrice: activeSubscription.plan.yearlyMonthlyPrice,
       isYearly: activeSubscription.isYearly,
       customMonthlyPrice: activeSubscription.customMonthlyPrice,
-      effectivePrice: activeSubscription.customMonthlyPrice || 
-        (activeSubscription.isYearly 
-          ? activeSubscription.plan.yearlyMonthlyPrice 
+      effectivePrice:
+        activeSubscription.customMonthlyPrice ||
+        (activeSubscription.isYearly
+          ? activeSubscription.plan.yearlyMonthlyPrice
           : activeSubscription.plan.monthlyPrice),
-      photoCount: input.photoCount,
-      videoCount: input.videoCount,
+      packageType: input.packageType,
+      packagePrice: input.packagePrice,
+      yearlyPackagePrice: input.yearlyPackagePrice,
     });
-
-    // Verify order limits based on subscription plan
-    const currentDate = new Date();
-    const firstDayOfMonth = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth(),
-      1
-    );
-    const lastDayOfMonth = new Date(
-      currentDate.getFullYear(),
-      currentDate.getMonth() + 1,
-      0
-    );
-
-    const monthlyOrders = await prisma.order.count({
-      where: {
-        workspaceId,
-        orderDate: {
-          gte: firstDayOfMonth,
-          lte: lastDayOfMonth,
-        },
-      },
-    });
-
-    // Check if adding this order would exceed the plan limits
-    const plan = activeSubscription.plan;
-    const totalPhotos = (input.photoCount || 0) + monthlyOrders;
-    if (totalPhotos > plan.photosPerMonth) {
-      return {
-        success: false,
-        error: `This order would exceed the monthly photo limit of ${plan.photosPerMonth}`,
-      };
-    }
-
-    if (plan.videosPerMonth !== null) {
-      const totalVideos = (input.videoCount || 0) + monthlyOrders;
-      if (totalVideos > plan.videosPerMonth) {
-        return {
-          success: false,
-          error: `This order would exceed the monthly video limit of ${plan.videosPerMonth}`,
-        };
-      }
-    }
 
     // Create the order using the existing createOrder action
     const orderResult = await createOrder({
       workspaceId,
-      location: input.location,
-      scheduledDate: input.scheduledDate.toISOString(),
+      status: OrderStatus.PENDING_PHOTOGRAPHER,
       requirements: input.requirements,
-      photoCount: input.photoCount,
-      videoCount: input.videoCount,
+      packageType: input.packageType,
+      packagePrice: activeSubscription.isYearly
+        ? input.yearlyPackagePrice
+        : input.packagePrice,
     });
 
     if (!orderResult.success) {

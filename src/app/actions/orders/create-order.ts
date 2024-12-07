@@ -7,11 +7,10 @@ import { OrderStatus } from "@prisma/client";
 
 interface CreateOrderInput {
   workspaceId: string;
-  location: string;
-  scheduledDate: string;
+  status: OrderStatus;
   requirements?: string;
-  photoCount?: number;
-  videoCount?: number;
+  packageType: string;
+  packagePrice: number;
 }
 
 interface CreateOrderResult {
@@ -38,16 +37,14 @@ export async function createOrder(
         data: {
           workspaceId: input.workspaceId,
           photographerId: undefined,
-          status: OrderStatus.PENDING_PHOTOGRAPHER,
+          status: input.status,
           orderDate: new Date(),
-          scheduledDate: new Date(input.scheduledDate),
-          location: input.location,
           requirements: input.requirements,
-          photoCount: input.photoCount || 0,
-          videoCount: input.videoCount || 0,
+          packageType: input.packageType,
+          packagePrice: input.packagePrice,
           statusHistory: {
             create: {
-              status: OrderStatus.PENDING_PHOTOGRAPHER,
+              status: input.status,
               changedBy: user.id,
               notes: "Ordre opprettet av admin",
             },
@@ -75,29 +72,7 @@ export async function createOrder(
         include: {
           workspace: {
             include: {
-              subscriptions: {
-                where: {
-                  isActive: true,
-                  OR: [
-                    {
-                      endDate: null,
-                    },
-                    {
-                      endDate: {
-                        gt: new Date(),
-                      },
-                    },
-                  ],
-                },
-                include: {
-                  plan: true,
-                  workspace: true,
-                },
-                orderBy: {
-                  startDate: "desc",
-                },
-                take: 1,
-              },
+              subscriptions: true,
             },
           },
         },

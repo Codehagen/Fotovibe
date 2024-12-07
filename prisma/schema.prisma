@@ -184,10 +184,10 @@ model Order {
   status         OrderStatus
   orderDate      DateTime      @default(now())
   scheduledDate  DateTime?
-  location       String
+  location       String?
   requirements   String?
-  photoCount     Int?
-  videoCount     Int?
+  packageType    String
+  packagePrice   Float
   deliveryDate   DateTime?
   cancelReason   String?
   media          Media[]
