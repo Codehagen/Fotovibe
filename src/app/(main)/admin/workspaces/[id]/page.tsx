@@ -160,11 +160,15 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
 
         <TabsContent value="overview" className="space-y-4">
           {/* Subscription Summary - Full Width */}
-          {subscriptionSuccess && subscriptionData?.subscription && (
+          {subscriptionSuccess && subscriptionData?.subscription ? (
             <div className="grid gap-4">
               <SubscriptionManagement
                 subscription={subscriptionData.subscription}
               />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              <SubscriptionSummary workspaceId={workspace.id} />
             </div>
           )}
 
