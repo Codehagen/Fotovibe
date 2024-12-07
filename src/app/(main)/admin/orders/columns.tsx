@@ -17,6 +17,7 @@ import Link from "next/link";
 import { OrderStatus } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { orderStatusMap } from "@/lib/order-status";
+import { OrderActions } from "@/components/tables/admin/order-actions";
 
 interface AdminOrder {
   id: string;
@@ -117,13 +118,6 @@ export const columns: ColumnDef<AdminOrder>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => (
-      <Button asChild variant="ghost" size="sm">
-        <Link href={`/admin/orders/${row.original.id}`}>
-          <Eye className="mr-2 h-4 w-4" />
-          Se ordre
-        </Link>
-      </Button>
-    ),
+    cell: ({ row }) => <OrderActions row={row} />,
   },
 ];

@@ -25,7 +25,6 @@ interface DeleteOrderDialogProps {
 export function DeleteOrderDialog({ orderId }: DeleteOrderDialogProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [open, setOpen] = useState(false);
 
   async function handleDelete() {
     setIsDeleting(true);
@@ -33,7 +32,6 @@ export function DeleteOrderDialog({ orderId }: DeleteOrderDialogProps) {
       const result = await deleteWorkspaceOrder(orderId);
       if (result.success) {
         toast.success("Ordre slettet");
-        router.push("/admin/orders");
         router.refresh();
       } else {
         toast.error(result.error);
@@ -42,14 +40,16 @@ export function DeleteOrderDialog({ orderId }: DeleteOrderDialogProps) {
       toast.error("Noe gikk galt");
     } finally {
       setIsDeleting(false);
-      setOpen(false);
     }
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
+    <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive">
+        <Button
+          variant="ghost"
+          className="relative flex w-full items-center justify-start text-destructive focus:text-destructive"
+        >
           <Trash2 className="mr-2 h-4 w-4" />
           Slett
         </Button>
