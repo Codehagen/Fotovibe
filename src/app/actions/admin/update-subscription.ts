@@ -1,62 +1,73 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
+import { getCurrentUser } from "../user/get-current-user";
 import { revalidatePath } from "next/cache";
 
-interface UpdateSubscriptionInput {
-  name: string;
-  package: "basic" | "premium" | "enterprise";
-  amount: number;
-  isActive: boolean;
+interface UpdateSubscriptionParams {
+  subscriptionId: string;
+  planName: string;
 }
 
-export async function updateSubscription(
-  workspaceId: string,
-  input: UpdateSubscriptionInput
-) {
+interface UpdateSubscriptionResult {
+  success: boolean;
+  error?: string;
+  subscription?: any;
+}
+
+export async function updateSubscription({
+  subscriptionId,
+  planName,
+}: UpdateSubscriptionParams): Promise<UpdateSubscriptionResult> {
   try {
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized");
-    }
-
-    // Verify user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isSuperUser: true },
-    });
-
+    const user = await getCurrentUser();
     if (!user?.isSuperUser) {
-      throw new Error("Unauthorized: Admin access required");
+      return {
+        success: false,
+        error: "Unauthorized",
+      };
     }
 
-    // Update or create subscription
-    const subscription = await prisma.subscription.upsert({
+    // Get the new plan
+    const plan = await prisma.plan.findFirst({
       where: {
-        workspaceId,
-      },
-      update: {
-        name: input.name,
-        package: input.package,
-        amount: input.amount,
-        isActive: input.isActive,
-        endDate: input.isActive ? null : new Date(),
-      },
-      create: {
-        workspaceId,
-        name: input.name,
-        package: input.package,
-        amount: input.amount,
-        isActive: input.isActive,
-        startDate: new Date(),
+        name: planName,
+        isActive: true,
       },
     });
 
-    revalidatePath(`/admin/workspaces/${workspaceId}`);
-    return { success: true, data: subscription };
+    if (!plan) {
+      return {
+        success: false,
+        error: "Invalid plan selected",
+      };
+    }
+
+    // Update the subscription
+    const subscription = await prisma.subscription.update({
+      where: {
+        id: subscriptionId,
+      },
+      data: {
+        planId: plan.id,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+      include: {
+        plan: true,
+        workspace: true,
+      },
+    });
+
+    revalidatePath("/admin");
+    revalidatePath(`/admin/workspaces/${subscription.workspaceId}`);
+
+    return {
+      success: true,
+      subscription,
+    };
   } catch (error) {
-    console.error("Error in updateSubscription:", error);
+    console.error("Error updating subscription:", error);
     return {
       success: false,
       error:

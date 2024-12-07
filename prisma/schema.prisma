@@ -95,38 +95,45 @@ model Workspace {
 
 // Subscription & Billing Models
 model Plan {
-  id             String         @id @default(cuid())
-  name           String
-  price          Float
-  currency       String         @default("NOK")
-  interval       String
-  photosPerMonth Int
-  videosPerMonth Int?
-  maxLocations   Int            @default(1)
-  features       Json?
-  isActive       Boolean        @default(true)
-  createdAt      DateTime       @default(now()) @map(name: "created_at")
-  updatedAt      DateTime       @default(now()) @map(name: "updated_at")
-  subscriptions  Subscription[]
+  id                 String         @id @default(cuid())
+  name               String // "Basic" | "Pro" | "Enterprise"
+  monthlyPrice       Float // Regular monthly price
+  yearlyMonthlyPrice Float // Monthly price when billed yearly
+  currency           String         @default("NOK")
+  photosPerMonth     Int
+  videosPerMonth     Int?
+  maxLocations       Int            @default(1)
+  features           Json // Detailed features for each plan
+  isActive           Boolean        @default(true)
+  createdAt          DateTime       @default(now()) @map(name: "created_at")
+  updatedAt          DateTime       @default(now()) @map(name: "updated_at")
+  subscriptions      Subscription[]
 
   @@index([isActive])
   @@map(name: "plans")
 }
 
 model Subscription {
-  id          String    @id @default(cuid())
-  workspaceId String    @unique
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
-  name        String
-  package     String // "basic" | "premium" | "enterprise"
-  amount      Float
-  isActive    Boolean   @default(true)
-  startDate   DateTime  @default(now())
-  endDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  Plan        Plan?     @relation(fields: [planId], references: [id])
-  planId      String?
+  id                 String    @id @default(cuid())
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id])
+  planId             String
+  plan               Plan      @relation(fields: [planId], references: [id])
+  isYearly           Boolean   @default(false)
+  isActive           Boolean   @default(true)
+  customMonthlyPrice Float? // Custom price per month if special deal
+  startDate          DateTime  @default(now())
+  endDate            DateTime?
+  currentPeriodStart DateTime  @default(now())
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean   @default(false)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([workspaceId])
+  @@index([planId])
+  @@index([isActive])
+  @@map(name: "subscriptions")
 }
 
 model Invoice {
@@ -177,10 +184,10 @@ model Order {
   status         OrderStatus
   orderDate      DateTime      @default(now())
   scheduledDate  DateTime?
-  location       String
+  location       String?
   requirements   String?
-  photoCount     Int?
-  videoCount     Int?
+  packageType    String
+  packagePrice   Float
   deliveryDate   DateTime?
   cancelReason   String?
   media          Media[]

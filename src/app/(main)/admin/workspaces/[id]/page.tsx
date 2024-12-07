@@ -3,7 +3,14 @@ import { getWorkspace } from "@/app/actions/admin/get-workspace";
 import { getWorkspaceSubscription } from "@/app/actions/admin/get-workspace-subscription";
 import { redirect } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/ui/card";
 import {
   Users,
   FileText,
@@ -37,6 +44,10 @@ import { format } from "date-fns";
 import { nb } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { CreateWorkspaceOrder } from "@/components/admin/create-workspace-order";
+import { formatPrice } from "@/lib/subscription-plans";
+import { SubscriptionManagement } from "@/components/admin/subscription-management";
+import { SubscriptionSummary } from "@/components/admin/subscription-summary";
+import { SubscriptionPlanButton } from "@/components/admin/subscription-plan-button";
 
 interface WorkspacePageProps {
   params: {
@@ -44,11 +55,34 @@ interface WorkspacePageProps {
   };
 }
 
-interface WorkspaceSubscription {
-  name: string;
-  package: "basic" | "premium" | "enterprise";
-  amount: number;
+interface SubscriptionData {
+  id: string;
+  workspaceId: string;
+  plan: {
+    id: string;
+    name: string;
+    monthlyPrice: number;
+    yearlyMonthlyPrice: number;
+  };
+  isYearly: boolean;
   isActive: boolean;
+  startDate: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+}
+
+interface WorkspaceSubscriptionData {
+  success: boolean;
+  error?: string;
+  data: {
+    subscription: SubscriptionData | null;
+    usage: {
+      photosUsed: number;
+      videosUsed: number;
+      locationsUsed: number;
+    };
+    invoices: any[];
+  };
 }
 
 interface WorkspaceWithCounts {
@@ -67,6 +101,7 @@ interface WorkspaceWithCounts {
   _count: {
     users: number;
     orders: number;
+    locationsUsed: number;
   };
   subscriptions: Array<{
     id: string;
@@ -101,8 +136,14 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
     return <div>Error: {error}</div>;
   }
 
+  const subscriptionResponse = await getWorkspaceSubscription(params.id);
+  console.log("Subscription Response:", subscriptionResponse);
+
   const { success: subscriptionSuccess, data: subscriptionData } =
-    await getWorkspaceSubscription(params.id);
+    subscriptionResponse as WorkspaceSubscriptionData;
+
+  console.log("Subscription Success:", subscriptionSuccess);
+  console.log("Subscription Data:", subscriptionData);
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
@@ -118,6 +159,19 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          {/* Subscription Summary - Full Width */}
+          {subscriptionSuccess && subscriptionData?.subscription ? (
+            <div className="grid gap-4">
+              <SubscriptionManagement
+                subscription={subscriptionData.subscription}
+              />
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              <SubscriptionSummary workspaceId={workspace.id} />
+            </div>
+          )}
+
           {/* Key Metrics */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
@@ -369,146 +423,288 @@ export default async function WorkspacePage({ params }: WorkspacePageProps) {
         </TabsContent>
 
         <TabsContent value="subscription" className="space-y-4">
-          <div className="grid gap-4">
-            {/* Current Subscription Status */}
-            <Card>
+          {subscriptionSuccess && subscriptionData?.subscription ? (
+            <SubscriptionManagement
+              subscription={subscriptionData.subscription}
+            />
+          ) : (
+            <SubscriptionSummary workspaceId={workspace.id} />
+          )}
+
+          {/* Subscription Plans */}
+          <div className="grid gap-6 md:grid-cols-3">
+            <Card
+              className={cn(
+                "relative",
+                subscriptionData?.subscription?.plan.name === "Basic" &&
+                  "border-primary"
+              )}
+            >
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Aktivt abonnement</CardTitle>
-                  <SubscriptionManager
-                    workspaceId={workspace.id}
-                    subscription={
-                      subscriptionData?.subscription
-                        ? {
-                            name: subscriptionData.subscription.name,
-                            package: subscriptionData.subscription.package,
-                            amount: subscriptionData.subscription.amount,
-                            isActive: subscriptionData.subscription.isActive,
-                          }
-                        : undefined
-                    }
-                  />
-                </div>
+                <CardTitle>Basic</CardTitle>
+                <CardDescription>{formatPrice(10000)} / mnd</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Status</p>
-                      <p
-                        className={cn(
-                          "text-2xl font-bold",
-                          subscriptionData?.subscription?.isActive
-                            ? "text-green-600"
-                            : "text-red-600"
-                        )}
-                      >
-                        {subscriptionData?.subscription?.isActive
-                          ? "Aktiv"
-                          : "Inaktiv"}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Pakke</p>
-                      <p className="text-2xl font-bold">
-                        {subscriptionData?.subscription?.package || "Ingen"}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Månedlig beløp</p>
-                      <p className="text-2xl font-bold">
-                        {subscriptionData?.subscription?.amount?.toLocaleString() ||
-                          0}{" "}
-                        kr
-                      </p>
-                    </div>
-                  </div>
-                </div>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Professional Photographers
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Professional Photo Editing
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    24/7 Support
+                  </li>
+                  <li className="flex items-center text-muted-foreground">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Multiple Locations
+                  </li>
+                  <li className="flex items-center text-muted-foreground">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Priority Booking
+                  </li>
+                  <li className="flex items-center text-muted-foreground">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Custom Branding
+                  </li>
+                </ul>
               </CardContent>
+              <CardFooter>
+                <SubscriptionPlanButton
+                  workspaceId={workspace.id}
+                  planName="Basic"
+                  currentPlan={
+                    subscriptionData?.subscription?.plan.name ?? null
+                  }
+                  subscriptionId={subscriptionData?.subscription?.id}
+                />
+              </CardFooter>
+              {subscriptionData?.subscription?.plan.name === "Basic" && (
+                <div className="absolute -top-2 -right-2 rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground">
+                  Nåværende plan
+                </div>
+              )}
             </Card>
 
-            {/* Usage Stats */}
-            <Card>
+            <Card
+              className={cn(
+                "relative",
+                subscriptionData?.subscription?.plan.name === "Pro" &&
+                  "border-primary"
+              )}
+            >
               <CardHeader>
-                <CardTitle>Forbruk denne måneden</CardTitle>
+                <CardTitle>Pro</CardTitle>
+                <CardDescription>{formatPrice(15000)} / mnd</CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Bilder</p>
-                    <p className="text-2xl font-bold">
-                      {subscriptionData?.usage.photosUsed || 0}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Videoer</p>
-                    <p className="text-2xl font-bold">
-                      {subscriptionData?.usage.videosUsed || 0}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Lokasjoner</p>
-                    <p className="text-2xl font-bold">
-                      {subscriptionData?.usage.locationsUsed || 0}
-                    </p>
-                  </div>
-                </div>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Professional Photographers
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Professional Photo Editing
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    24/7 Support
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Multiple Locations
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Priority Booking
+                  </li>
+                  <li className="flex items-center text-muted-foreground">
+                    <XCircle className="mr-2 h-4 w-4" />
+                    Custom Branding
+                  </li>
+                </ul>
               </CardContent>
+              <CardFooter>
+                <SubscriptionPlanButton
+                  workspaceId={workspace.id}
+                  planName="Pro"
+                  currentPlan={
+                    subscriptionData?.subscription?.plan.name ?? null
+                  }
+                  subscriptionId={subscriptionData?.subscription?.id}
+                />
+              </CardFooter>
+              {subscriptionData?.subscription?.plan.name === "Pro" && (
+                <div className="absolute -top-2 -right-2 rounded-full bg-primary px-3 py-1 text-xs text-primary-foreground">
+                  Nåværende plan
+                </div>
+              )}
             </Card>
 
-            {/* Invoice History */}
-            <Card>
+            <Card
+              className={cn(
+                "relative",
+                subscriptionData?.subscription?.plan.name === "Enterprise" &&
+                  "border-primary"
+              )}
+            >
               <CardHeader>
-                <CardTitle>Faktura historikk</CardTitle>
+                <CardTitle>Enterprise</CardTitle>
+                <CardDescription>{formatPrice(20000)} / mnd</CardDescription>
               </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Dato</TableHead>
-                      <TableHead>Beløp</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Fiken ID</TableHead>
-                      <TableHead></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {subscriptionData?.invoices.map((invoice) => (
-                      <TableRow key={invoice.id}>
-                        <TableCell>
-                          {format(new Date(invoice.dueDate), "PPP", {
-                            locale: nb,
-                          })}
-                        </TableCell>
-                        <TableCell>
-                          {invoice.amount.toLocaleString()} kr
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              invoice.status === "PAID"
-                                ? "default"
-                                : invoice.status === "PENDING"
-                                ? "outline"
-                                : "destructive"
-                            }
-                          >
-                            {invoice.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{invoice.fikenId || "-"}</TableCell>
-                        <TableCell>
-                          <Button variant="ghost" size="sm">
-                            Last ned
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+              <CardContent className="space-y-4">
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Professional Photographers
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Professional Photo Editing
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    24/7 Support
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Multiple Locations
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Priority Booking
+                  </li>
+                  <li className="flex items-center">
+                    <CheckCircle2 className="mr-2 h-4 w-4 text-primary" />
+                    Custom Branding
+                  </li>
+                </ul>
               </CardContent>
+              <CardFooter>
+                <SubscriptionPlanButton
+                  workspaceId={workspace.id}
+                  planName="Enterprise"
+                  currentPlan={
+                    subscriptionData?.subscription?.plan.name ?? null
+                  }
+                  subscriptionId={subscriptionData?.subscription?.id}
+                />
+              </CardFooter>
             </Card>
           </div>
+
+          {/* Usage Stats Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Forbruk denne måneden</CardTitle>
+              <CardDescription>
+                Oversikt over brukte ressurser i inneværende periode
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Image className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-sm font-medium text-muted-foreground">
+                      Bilder
+                    </h4>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {subscriptionData?.usage?.photosUsed ?? 0}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Video className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-sm font-medium text-muted-foreground">
+                      Videoer
+                    </h4>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {subscriptionData?.usage?.videosUsed ?? 0}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-sm font-medium text-muted-foreground">
+                      Lokasjoner
+                    </h4>
+                  </div>
+                  <p className="text-2xl font-bold">
+                    {subscriptionData?.usage?.locationsUsed ?? 0}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Invoice History Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Faktura historikk</CardTitle>
+              <CardDescription>
+                Oversikt over tidligere fakturaer og betalinger
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Dato</TableHead>
+                    <TableHead>Beløp</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Fiken ID</TableHead>
+                    <TableHead className="text-right">Handling</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {subscriptionData?.invoices.map((invoice) => (
+                    <TableRow key={invoice.id}>
+                      <TableCell>
+                        {format(new Date(invoice.dueDate), "PPP", {
+                          locale: nb,
+                        })}
+                      </TableCell>
+                      <TableCell>{formatPrice(invoice.amount)}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            invoice.status === "PAID"
+                              ? "default"
+                              : invoice.status === "PENDING"
+                              ? "secondary"
+                              : "destructive"
+                          }
+                        >
+                          {invoice.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{invoice.fikenId || "-"}</TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          disabled={!invoice.fikenId}
+                        >
+                          <FileText className="h-4 w-4" />
+                          <span className="sr-only">Last ned faktura</span>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="media">

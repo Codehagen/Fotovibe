@@ -1,128 +1,96 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { auth } from "@clerk/nextjs/server";
 
-interface SubscriptionResponse {
-  subscription: {
-    name: string;
-    package: "basic" | "premium" | "enterprise";
-    amount: number;
-    isActive: boolean;
-  } | null;
-  usage: {
-    photosUsed: number;
-    videosUsed: number;
-    locationsUsed: number;
-  };
-  invoices: Array<{
+interface SubscriptionData {
+  id: string;
+  workspaceId: string;
+  plan: {
     id: string;
-    amount: number;
-    status: string;
-    dueDate: Date;
-    fikenId: string | null;
-  }>;
+    name: string;
+    monthlyPrice: number;
+    yearlyMonthlyPrice: number;
+  };
+  isYearly: boolean;
+  isActive: boolean;
+  startDate: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
 }
 
-export async function getWorkspaceSubscription(workspaceId: string): Promise<{
+interface GetWorkspaceSubscriptionResult {
   success: boolean;
-  data?: SubscriptionResponse;
   error?: string;
-}> {
+  data: {
+    subscription: SubscriptionData | null;
+    usage: {
+      photosUsed: number;
+      videosUsed: number;
+      locationsUsed: number;
+    };
+    invoices: any[];
+  };
+}
+
+export async function getWorkspaceSubscription(
+  workspaceId: string
+): Promise<GetWorkspaceSubscriptionResult> {
   try {
-    console.log(
-      "Starting getWorkspaceSubscription for workspace:",
-      workspaceId
-    );
-
-    const { userId } = await auth();
-    if (!userId) {
-      throw new Error("Unauthorized: No user found");
-    }
-
-    // Verify user is admin
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { isSuperUser: true },
-    });
-
-    if (!user?.isSuperUser) {
-      throw new Error("Unauthorized: Admin access required");
-    }
-
-    // Get active subscription
-    const subscription = await prisma.subscription.findUnique({
+    const subscription = await prisma.subscription.findFirst({
       where: {
         workspaceId,
+        isActive: true,
+      },
+      include: {
+        plan: true,
       },
     });
+
     console.log("Found subscription:", subscription);
 
-    // Get current month's usage
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const usage = await prisma.order.aggregate({
-      where: {
-        workspaceId,
-        orderDate: {
-          gte: startOfMonth,
-        },
-        status: {
-          not: "CANCELLED",
-        },
-      },
-      _sum: {
-        photoCount: true,
-        videoCount: true,
-      },
-      _count: {
-        location: true,
-      },
-    });
-    console.log("Current usage:", usage);
-
-    // Get recent invoices
-    const invoices = await prisma.invoice.findMany({
-      where: {
-        workspaceId,
-      },
-      orderBy: {
-        dueDate: "desc",
-      },
-      take: 12, // Last 12 months
-    });
-    console.log("Recent invoices:", invoices);
-
+    // Always return a consistent structure
     return {
       success: true,
       data: {
         subscription: subscription
           ? {
-              name: subscription.name,
-              package: subscription.package as
-                | "basic"
-                | "premium"
-                | "enterprise",
-              amount: subscription.amount,
+              id: subscription.id,
+              workspaceId: subscription.workspaceId,
+              plan: {
+                id: subscription.plan.id,
+                name: subscription.plan.name,
+                monthlyPrice: subscription.plan.monthlyPrice,
+                yearlyMonthlyPrice: subscription.plan.yearlyMonthlyPrice,
+              },
+              isYearly: subscription.isYearly,
               isActive: subscription.isActive,
+              startDate: subscription.startDate,
+              currentPeriodEnd: subscription.currentPeriodEnd,
+              cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
             }
           : null,
         usage: {
-          photosUsed: usage._sum.photoCount || 0,
-          videosUsed: usage._sum.videoCount || 0,
-          locationsUsed: usage._count.location || 0,
+          photosUsed: 0, // Implement actual usage counting
+          videosUsed: 0,
+          locationsUsed: 0,
         },
-        invoices,
+        invoices: [],
       },
     };
   } catch (error) {
-    console.error("Error in getWorkspaceSubscription:", error);
+    console.error("Error getting workspace subscription:", error);
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Failed to fetch subscription",
+      error: "Failed to get workspace subscription",
+      data: {
+        subscription: null,
+        usage: {
+          photosUsed: 0,
+          videosUsed: 0,
+          locationsUsed: 0,
+        },
+        invoices: [],
+      },
     };
   }
 }

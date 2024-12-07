@@ -22,33 +22,48 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
-import { CalendarIcon, PlusCircle } from "lucide-react";
+import { PlusCircle } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { createWorkspaceOrder } from "@/app/actions/admin/create-workspace-order";
+import { formatPrice } from "@/lib/subscription-plans";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { siteConfig } from "@/lib/config";
 import { testFikenInvoice } from "@/app/actions/admin/test-fiken-invoice";
 
 const formSchema = z.object({
-  location: z.string().min(1, "Location is required"),
-  scheduledDate: z.date({
-    required_error: "Please select a date",
-  }),
+  packageType: z.enum(["BASIC", "PRO", "ENTERPRISE"]),
   requirements: z.string().optional(),
-  photoCount: z.number().min(0).default(0),
-  videoCount: z.number().min(0).default(0),
 });
 
 type FormValues = z.infer<typeof formSchema>;
+
+const PHOTO_PACKAGES = siteConfig.pricing.reduce((acc, plan) => {
+  return {
+    ...acc,
+    [plan.name]: {
+      name: plan.name,
+      description: plan.description,
+      price: parseInt(plan.price),
+      yearlyPrice: parseInt(plan.yearlyPrice),
+      features: plan.features,
+    },
+  };
+}, {} as Record<string, {
+  name: string;
+  description: string;
+  price: number;
+  yearlyPrice: number;
+  features: string[];
+}>);
 
 interface CreateWorkspaceOrderProps {
   workspaceId: string;
@@ -64,20 +79,20 @@ export function CreateWorkspaceOrder({
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      photoCount: 0,
-      videoCount: 0,
+      packageType: "BASIC",
+      requirements: "",
     },
   });
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
     try {
+      const selectedPackage = PHOTO_PACKAGES[values.packageType];
       const orderInput = {
-        location: values.location,
-        scheduledDate: values.scheduledDate,
+        packageType: values.packageType,
+        packagePrice: selectedPackage.price,
+        yearlyPackagePrice: selectedPackage.yearlyPrice,
         requirements: values.requirements,
-        photoCount: values.photoCount,
-        videoCount: values.videoCount,
       };
 
       const orderResult = await createWorkspaceOrder(workspaceId, orderInput);
@@ -98,19 +113,12 @@ export function CreateWorkspaceOrder({
 
         // Simple success message for order creation only
         toast.success("Ordre opprettet");
-
+        
         setOpen(false);
         form.reset();
         router.refresh();
       } else {
-        if (Array.isArray(orderResult.error)) {
-          const errorMessage = orderResult.error
-            .map((err) => err.message)
-            .join(", ");
-          toast.error(errorMessage);
-        } else {
-          toast.error(orderResult.error as string);
-        }
+        toast.error(orderResult.error || "Kunne ikke opprette ordre");
       }
     } catch (error) {
       toast.error("Noe gikk galt");
@@ -131,117 +139,58 @@ export function CreateWorkspaceOrder({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Opprett ny ordre</DialogTitle>
-          <DialogDescription>
-            Fyll ut informasjonen under for å opprette en ny ordre
-          </DialogDescription>
+          <DialogDescription>Velg fotopakke for denne ordren</DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="location"
+              name="packageType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Lokasjon</FormLabel>
-                  <FormControl>
-                    <Input placeholder="F.eks. Storgata 1, Oslo" {...field} />
-                  </FormControl>
+                  <FormLabel>Velg fotopakke</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Velg en pakke" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectGroup>
+                        <SelectLabel>Fotopakker</SelectLabel>
+                        {siteConfig.pricing.map((plan) => (
+                          <SelectItem key={plan.name} value={plan.name}>
+                            <div className="flex justify-between items-center w-full gap-8">
+                              <div>
+                                {plan.name} - {plan.features[0]}
+                              </div>
+                              <div className="text-muted-foreground">
+                                {formatPrice(parseInt(plan.price))}
+                              </div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <FormField
-              control={form.control}
-              name="scheduledDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Dato</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full pl-3 text-left font-normal",
-                            !field.value && "text-muted-foreground"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, "PPP", { locale: nb })
-                          ) : (
-                            <span>Velg dato</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) =>
-                          date < new Date() || date < new Date("1900-01-01")
-                        }
-                        initialFocus
-                        locale={nb}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="photoCount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Antall bilder</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="videoCount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Antall videoer</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(Number(e.target.value))}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
 
             <FormField
               control={form.control}
               name="requirements"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Krav og spesifikasjoner (valgfritt)</FormLabel>
+                  <FormLabel>Spesielle ønsker (valgfritt)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Legg til spesielle krav eller ønsker..."
+                      placeholder="F.eks. spesielle vinkler, fokusområder eller andre ønsker..."
                       {...field}
                     />
                   </FormControl>

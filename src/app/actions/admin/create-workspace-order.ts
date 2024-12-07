@@ -4,19 +4,25 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "../user/get-current-user";
 import { createOrder } from "../orders/create-order";
 import { revalidatePath } from "next/cache";
+import { OrderStatus } from "@prisma/client";
 
 interface CreateWorkspaceOrderInput {
-  location: string;
-  scheduledDate: Date;
+  packageType: "BASIC" | "PRO" | "ENTERPRISE";
+  packagePrice: number;
+  yearlyPackagePrice: number;
   requirements?: string;
-  photoCount?: number;
-  videoCount?: number;
+}
+
+interface CreateWorkspaceOrderResult {
+  success: boolean;
+  error?: string | string[];
+  order?: any;
 }
 
 export async function createWorkspaceOrder(
   workspaceId: string,
   input: CreateWorkspaceOrderInput
-) {
+): Promise<CreateWorkspaceOrderResult> {
   try {
     const user = await getCurrentUser();
     if (!user?.isSuperUser) {
@@ -26,14 +32,65 @@ export async function createWorkspaceOrder(
       };
     }
 
+    // Verify workspace has an active subscription
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      include: {
+        subscriptions: {
+          where: {
+            isActive: true,
+            OR: [{ endDate: null }, { endDate: { gt: new Date() } }],
+          },
+          include: {
+            plan: true,
+          },
+          orderBy: { startDate: "desc" },
+          take: 1,
+        },
+      },
+    });
+
+    if (!workspace) {
+      return {
+        success: false,
+        error: "Workspace not found",
+      };
+    }
+
+    const activeSubscription = workspace.subscriptions[0];
+    if (!activeSubscription) {
+      return {
+        success: false,
+        error: "No active subscription found",
+      };
+    }
+
+    // Add price logging
+    console.log("Order Pricing Details:", {
+      planName: activeSubscription.plan.name,
+      baseMonthlyPrice: activeSubscription.plan.monthlyPrice,
+      yearlyMonthlyPrice: activeSubscription.plan.yearlyMonthlyPrice,
+      isYearly: activeSubscription.isYearly,
+      customMonthlyPrice: activeSubscription.customMonthlyPrice,
+      effectivePrice:
+        activeSubscription.customMonthlyPrice ||
+        (activeSubscription.isYearly
+          ? activeSubscription.plan.yearlyMonthlyPrice
+          : activeSubscription.plan.monthlyPrice),
+      packageType: input.packageType,
+      packagePrice: input.packagePrice,
+      yearlyPackagePrice: input.yearlyPackagePrice,
+    });
+
     // Create the order using the existing createOrder action
     const orderResult = await createOrder({
       workspaceId,
-      location: input.location,
-      scheduledDate: input.scheduledDate.toISOString(),
+      status: OrderStatus.PENDING_PHOTOGRAPHER,
       requirements: input.requirements,
-      photoCount: input.photoCount,
-      videoCount: input.videoCount,
+      packageType: input.packageType,
+      packagePrice: activeSubscription.isYearly
+        ? input.yearlyPackagePrice
+        : input.packagePrice,
     });
 
     if (!orderResult.success) {
@@ -42,6 +99,7 @@ export async function createWorkspaceOrder(
 
     revalidatePath("/admin");
     revalidatePath("/admin/orders");
+    revalidatePath(`/admin/workspaces/${workspaceId}`);
 
     return orderResult;
   } catch (error) {
