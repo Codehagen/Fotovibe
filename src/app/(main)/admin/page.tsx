@@ -82,6 +82,7 @@ import { RecentActivities } from "@/components/admin/recent-activities";
 import { PhotographerPerformance } from "@/components/admin/photographer-performance";
 import { EditorPerformance } from "@/components/admin/editor-performance";
 import { TestInvoiceButton } from "@/components/admin/test-invoice-button";
+import { TestCronButton } from "@/components/admin/test-cron-button";
 
 export default async function AdminPage() {
   const user = await getCurrentUser();
@@ -122,7 +123,10 @@ export default async function AdminPage() {
         <TabsContent value="overview" className="space-y-4">
           <div className="flex justify-between items-center">
             <h3 className="text-lg font-medium">Dashboard Overview</h3>
-            <TestInvoiceButton />
+            <div className="flex gap-2">
+              <TestCronButton />
+              <TestInvoiceButton />
+            </div>
           </div>
           <div className="grid gap-4 md:grid-cols-4">
             <Card>

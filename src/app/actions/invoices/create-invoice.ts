@@ -41,7 +41,7 @@ export async function createInvoice(input: CreateInvoiceInput) {
             OR: [{ endDate: null }, { endDate: { gt: new Date() } }],
           },
           include: {
-            Plan: true,
+            plan: true,
           },
           orderBy: {
             startDate: "desc",
@@ -69,21 +69,21 @@ export async function createInvoice(input: CreateInvoiceInput) {
     let totalAmount = subscription.amount;
 
     // Add extra charges if order exceeds subscription limits
-    if (subscription.Plan) {
+    if (subscription.plan) {
       if (
         order.photoCount &&
-        order.photoCount > subscription.Plan.photosPerMonth
+        order.photoCount > subscription.plan.photosPerMonth
       ) {
-        const extraPhotos = order.photoCount - subscription.Plan.photosPerMonth;
+        const extraPhotos = order.photoCount - subscription.plan.photosPerMonth;
         totalAmount += extraPhotos * 100; // 100 NOK per extra photo
       }
 
       if (
         order.videoCount &&
-        subscription.Plan.videosPerMonth &&
-        order.videoCount > subscription.Plan.videosPerMonth
+        subscription.plan.videosPerMonth &&
+        order.videoCount > subscription.plan.videosPerMonth
       ) {
-        const extraVideos = order.videoCount - subscription.Plan.videosPerMonth;
+        const extraVideos = order.videoCount - subscription.plan.videosPerMonth;
         totalAmount += extraVideos * 500; // 500 NOK per extra video
       }
     }
