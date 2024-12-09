@@ -13,12 +13,13 @@ export async function approveMedia(mediaId: string) {
       };
     }
 
-    await prisma.media.update({
+    await prisma.contactRequest.update({
       where: { id: mediaId },
       data: {
-        status: "approved",
-        approvedBy: user.id,
+        status: "APPROVED",
         approvedAt: new Date(),
+        reviewedAt: new Date(),
+        reviewedBy: user.id,
       },
     });
 
@@ -44,12 +45,13 @@ export async function rejectMedia(mediaId: string) {
       };
     }
 
-    await prisma.media.update({
+    await prisma.contactRequest.update({
       where: { id: mediaId },
       data: {
-        status: "rejected",
-        approvedBy: user.id,
-        approvedAt: new Date(),
+        status: "REJECTED",
+        rejectedAt: new Date(),
+        reviewedAt: new Date(),
+        reviewedBy: user.id,
       },
     });
 

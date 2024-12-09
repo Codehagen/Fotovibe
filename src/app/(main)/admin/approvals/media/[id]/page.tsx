@@ -1,7 +1,6 @@
 "use client";
 
-import { getCurrentUser } from "@/app/actions/user/get-current-user";
-import { redirect, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -17,64 +16,51 @@ import {
   CheckCircle,
   XCircle,
   ArrowLeft,
-  FileType,
-  Info,
-  Tag,
-  Clock,
+  Mail,
+  Phone,
   Hash,
+  Clock,
   Globe,
-  Folder,
+  Camera,
+  Briefcase,
+  CalendarDays,
 } from "lucide-react";
-import { prisma } from "@/lib/db";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { format } from "date-fns";
 import { nb } from "date-fns/locale";
-import Image from "next/image";
-import { Badge } from "@/components/ui/badge";
 import { ConfirmationDialog } from "@/components/admin/approval/confirmation-dialog";
 import { useState, useEffect } from "react";
 import {
   approveMedia,
   rejectMedia,
 } from "@/app/actions/admin/handle-approvals";
+import { getPhotographerDetails } from "@/app/actions/admin/get-photographer-details";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
 
-async function getMediaDetails(id: string) {
-  "use server";
-  try {
-    const media = await prisma.media.findUnique({
-      where: { id },
-      include: {
-        workspace: true,
-        order: {
-          include: {
-            photographer: true,
-          },
-        },
-      },
-    });
-    return { success: true, data: media };
-  } catch (error) {
-    console.error("[GET_MEDIA_DETAILS]", error);
-    return { success: false, error: "Could not fetch media details" };
-  }
+interface PhotographerDetails {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  companyName: string;
+  companyOrgnr: string;
+  companyAddress: string;
+  companyZip: string;
+  companyCity: string;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  status: string;
+  portfolio?: string;
+  experience?: string;
+  equipment?: string;
+  specialties: string[];
+  availability?: string;
 }
 
-function formatFileSize(bytes: number) {
-  const units = ["B", "KB", "MB", "GB"];
-  let size = bytes;
-  let unitIndex = 0;
-
-  while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024;
-    unitIndex++;
-  }
-
-  return `${size.toFixed(1)} ${units[unitIndex]}`;
-}
-
-export default function MediaDetailPage({
+export default function PhotographerDetailPage({
   params,
 }: {
   params: { id: string };
@@ -83,16 +69,19 @@ export default function MediaDetailPage({
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [media, setMedia] = useState<any>(null);
+  const [photographer, setPhotographer] = useState<PhotographerDetails | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
-      const result = await getMediaDetails(params.id);
+      const result = await getPhotographerDetails(params.id);
       if (result.success && result.data) {
-        setMedia(result.data);
+        setPhotographer(result.data as PhotographerDetails);
       } else {
-        setError(result.error || "Could not load media details");
+        setError(result.error || "Could not load photographer details");
+        toast.error("Kunne ikke laste inn fotografdetaljer");
         router.push("/admin/approvals");
       }
     }
@@ -105,11 +94,11 @@ export default function MediaDetailPage({
       const result = await approveMedia(params.id);
 
       if (result.success) {
-        toast.success("Mediet ble godkjent");
+        toast.success("Fotografen ble godkjent");
         router.push("/admin/approvals");
         router.refresh();
       } else {
-        toast.error(result.error || "Kunne ikke godkjenne mediet");
+        toast.error(result.error || "Kunne ikke godkjenne fotografen");
       }
     } catch (error) {
       toast.error("En feil oppstod under godkjenning");
@@ -125,11 +114,11 @@ export default function MediaDetailPage({
       const result = await rejectMedia(params.id);
 
       if (result.success) {
-        toast.success("Mediet ble avvist");
+        toast.success("Fotografen ble avvist");
         router.push("/admin/approvals");
         router.refresh();
       } else {
-        toast.error(result.error || "Kunne ikke avvise mediet");
+        toast.error(result.error || "Kunne ikke avvise fotografen");
       }
     } catch (error) {
       toast.error("En feil oppstod under avvisning");
@@ -139,212 +128,203 @@ export default function MediaDetailPage({
     }
   };
 
-  if (!media) {
+  if (!photographer) {
     return <div>Laster...</div>;
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 pt-0">
-      <div className="flex items-center gap-4">
-        <Link href="/admin/approvals">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Tilbake
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link href="/admin/approvals">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Tilbake
+            </Button>
+          </Link>
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">
+              Fotograf Godkjenning
+            </h2>
+            <p className="text-muted-foreground">
+              Gjennomgå og godkjenn fotografforespørsel
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsRejectDialogOpen(true)}
+            disabled={isLoading}
+          >
+            <XCircle className="mr-2 h-4 w-4" />
+            Avvis
           </Button>
-        </Link>
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">
-            Medie Godkjenning
-          </h2>
-          <p className="text-muted-foreground">
-            Gjennomgå og godkjenn medieinnhold
-          </p>
+          <Button
+            size="sm"
+            onClick={() => setIsApproveDialogOpen(true)}
+            disabled={isLoading}
+          >
+            <CheckCircle className="mr-2 h-4 w-4" />
+            Godkjenn
+          </Button>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Personlig Informasjon</CardTitle>
+            <CardDescription>Detaljer om fotografen</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">{photographer.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {photographer.companyAddress}, {photographer.companyZip}{" "}
+                  {photographer.companyCity}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">E-post</p>
+                <p className="text-sm text-muted-foreground">
+                  {photographer.email}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Telefon</p>
+                <p className="text-sm text-muted-foreground">
+                  {photographer.phone}
+                </p>
+              </div>
+            </div>
+            {photographer.portfolio && (
+              <div className="flex items-center gap-2">
+                <Globe className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="font-medium">Portfolio</p>
+                  <a
+                    href={photographer.portfolio}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    {photographer.portfolio}
+                  </a>
+                </div>
+              </div>
+            )}
+          </CardContent>
+          <Separator className="my-4" />
+          <CardHeader>
+            <CardTitle>Tidslinjer</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Registrert</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(photographer.createdAt), "PPP", {
+                    locale: nb,
+                  })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-muted-foreground" />
+              <div>
+                <p className="font-medium">Sist oppdatert</p>
+                <p className="text-sm text-muted-foreground">
+                  {format(new Date(photographer.updatedAt), "PPP", {
+                    locale: nb,
+                  })}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Forhåndsvisning</CardTitle>
-              <CardDescription>
-                {media.type === "image" ? "Bilde" : "Video"} fra{" "}
-                {media.workspace.name}
-              </CardDescription>
+              <CardTitle>Fotograf Detaljer</CardTitle>
+              <CardDescription>Erfaring og utstyr</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="relative aspect-video w-full overflow-hidden rounded-lg">
-                {media.type === "image" ? (
-                  <Image
-                    src={media.url || ""}
-                    alt={media.title || ""}
-                    fill
-                    className="object-cover"
-                  />
-                ) : (
-                  <video
-                    src={media.url || ""}
-                    controls
-                    className="h-full w-full"
-                  />
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Metadata</CardTitle>
-              <CardDescription>Teknisk informasjon</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <FileType className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Filformat</p>
-                  <p className="text-sm text-muted-foreground">
-                    {media.format?.toUpperCase()}
-                  </p>
-                </div>
-              </div>
-              {media.size && (
-                <div className="flex items-center gap-2">
-                  <Info className="h-4 w-4 text-muted-foreground" />
+            <CardContent className="space-y-6">
+              {photographer.experience && (
+                <div className="flex items-start gap-2">
+                  <Briefcase className="h-4 w-4 mt-1 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Filstørrelse</p>
-                    <p className="text-sm text-muted-foreground">
-                      {formatFileSize(media.size)}
+                    <p className="font-medium">Erfaring</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {photographer.experience}
                     </p>
                   </div>
                 </div>
               )}
-              {media.tags && media.tags.length > 0 && (
+              {photographer.equipment && (
                 <div className="flex items-start gap-2">
-                  <Tag className="h-4 w-4 text-muted-foreground mt-1" />
+                  <Camera className="h-4 w-4 mt-1 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">Tagger</p>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {media.tags.map((tag: string) => (
-                        <Badge key={tag} variant="secondary">
-                          {tag}
+                    <p className="font-medium">Utstyr</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {photographer.equipment}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {photographer.specialties &&
+                photographer.specialties.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="font-medium">Spesialiteter</p>
+                    <div className="flex flex-wrap gap-2">
+                      {photographer.specialties.map((specialty) => (
+                        <Badge key={specialty} variant="secondary">
+                          {specialty}
                         </Badge>
                       ))}
                     </div>
                   </div>
-                </div>
-              )}
-              <div className="flex items-center gap-2">
-                <Hash className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">ID</p>
-                  <p className="text-sm text-muted-foreground">{media.id}</p>
-                </div>
-              </div>
-              {media.metadata && (
-                <div className="rounded-lg bg-muted p-4">
-                  <p className="font-medium mb-2">Ekstra metadata</p>
-                  <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
-                    {JSON.stringify(media.metadata, null, 2)}
-                  </pre>
+                )}
+              {photographer.availability && (
+                <div className="flex items-start gap-2">
+                  <CalendarDays className="h-4 w-4 mt-1 text-muted-foreground" />
+                  <div>
+                    <p className="font-medium">Tilgjengelighet</p>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {photographer.availability}
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
-        </div>
 
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bedriftsinformasjon</CardTitle>
-              <CardDescription>Detaljer om bedriften</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">{media.workspace.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Org.nr: {media.workspace.orgnr}
-                  </p>
-                </div>
-              </div>
-              {media.order?.photographer && (
-                <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Fotograf</p>
-                    <p className="text-sm text-muted-foreground">
-                      {media.order.photographer.name}
-                    </p>
-                  </div>
-                </div>
-              )}
-              {media.order && (
-                <div className="flex items-center gap-2">
-                  <Folder className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-medium">Ordre</p>
-                    <p className="text-sm text-muted-foreground">
-                      {media.order.id}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-            <Separator className="my-4" />
-            <CardHeader>
-              <CardTitle>Mediedetaljer</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Lastet opp</p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(media.createdAt, "PPP", { locale: nb })}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <div>
-                  <p className="font-medium">Sist oppdatert</p>
-                  <p className="text-sm text-muted-foreground">
-                    {format(media.updatedAt, "PPP", { locale: nb })}
-                  </p>
-                </div>
-              </div>
-              {media.description && (
-                <div className="rounded-lg bg-muted p-4">
-                  <p className="font-medium mb-2">Beskrivelse</p>
+          {photographer.notes && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Tilleggsinformasjon</CardTitle>
+                <CardDescription>Notater og annen informasjon</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg bg-muted p-4 space-y-3">
                   <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {media.description}
+                    {photographer.notes}
                   </p>
                 </div>
-              )}
-            </CardContent>
-            <CardFooter className="flex gap-2">
-              <Button
-                className="flex-1"
-                variant="outline"
-                size="lg"
-                onClick={() => setIsRejectDialogOpen(true)}
-                disabled={isLoading}
-              >
-                <XCircle className="mr-2 h-4 w-4" />
-                Avvis
-              </Button>
-              <Button
-                className="flex-1"
-                size="lg"
-                onClick={() => setIsApproveDialogOpen(true)}
-                disabled={isLoading}
-              >
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Godkjenn
-              </Button>
-            </CardFooter>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -352,8 +332,8 @@ export default function MediaDetailPage({
         isOpen={isApproveDialogOpen}
         onClose={() => setIsApproveDialogOpen(false)}
         onConfirm={handleApprove}
-        title="Godkjenn medie"
-        description="Er du sikker på at du vil godkjenne dette mediet? Dette vil gjøre det tilgjengelig for bedriften."
+        title="Godkjenn fotograf"
+        description="Er du sikker på at du vil godkjenne denne fotografen? Dette vil gi dem tilgang til plattformen."
         isApproval={true}
         isLoading={isLoading}
       />
@@ -362,8 +342,8 @@ export default function MediaDetailPage({
         isOpen={isRejectDialogOpen}
         onClose={() => setIsRejectDialogOpen(false)}
         onConfirm={handleReject}
-        title="Avvis medie"
-        description="Er du sikker på at du vil avvise dette mediet? Dette vil informere bedriften om at mediet ikke ble godkjent."
+        title="Avvis fotograf"
+        description="Er du sikker på at du vil avvise denne fotografen? Dette vil informere dem om at forespørselen ble avvist."
         isApproval={false}
         isLoading={isLoading}
       />

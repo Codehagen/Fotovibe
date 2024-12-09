@@ -4,22 +4,25 @@ import { prisma } from "@/lib/db";
 
 export async function getPendingMedia() {
   try {
-    const media = await prisma.media.findMany({
+    const media = await prisma.contactRequest.findMany({
       where: {
-        status: "raw", // Only get raw media that needs approval
+        status: "PENDING",
+        requestType: "PHOTOGRAPHER",
       },
       select: {
         id: true,
-        title: true,
-        thumbnail: true,
+        companyName: true,
+        email: true,
+        phone: true,
         createdAt: true,
-        type: true,
-        workspace: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
+        notes: true,
+        companyOrgnr: true,
+        requestType: true,
+        portfolio: true,
+        experience: true,
+        equipment: true,
+        specialties: true,
+        availability: true,
       },
       orderBy: {
         createdAt: "desc",
@@ -30,12 +33,19 @@ export async function getPendingMedia() {
       success: true,
       data: media.map((item) => ({
         id: item.id,
-        title: item.title || "Untitled",
-        thumbnailUrl: item.thumbnail || "",
+        title: item.companyName || "Untitled",
+        thumbnailUrl: item.portfolio || "",
         uploadedAt: item.createdAt,
-        workspaceId: item.workspace.id,
-        workspaceName: item.workspace.name,
-        type: item.type,
+        workspaceId: item.companyOrgnr,
+        workspaceName: item.companyName,
+        type: item.requestType,
+        email: item.email,
+        phone: item.phone,
+        notes: item.notes,
+        experience: item.experience,
+        equipment: item.equipment,
+        specialties: item.specialties,
+        availability: item.availability,
       })),
     };
   } catch (error) {
@@ -74,7 +84,7 @@ export async function getPendingBusinessRequests() {
         id: request.id,
         name: request.companyName,
         email: request.email,
-        contactPerson: request.phone, // Using phone as contact for now
+        contactPerson: request.phone,
         type: "Business",
         registeredAt: request.createdAt,
         notes: request.notes,

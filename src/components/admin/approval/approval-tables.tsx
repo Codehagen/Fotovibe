@@ -31,7 +31,7 @@ interface ApprovalTablesProps {
 }
 
 // Create client components for the tables
-function MediaTable({ data }: { data: MediaItem[] }) {
+function PhotographTable({ data }: { data: MediaItem[] }) {
   const router = useRouter();
   return (
     <div className="rounded-md border">
@@ -70,7 +70,7 @@ export function ApprovalTables({
       <TabsList>
         <TabsTrigger value="overview">Oversikt</TabsTrigger>
         <TabsTrigger value="media" className="relative">
-          Medier
+          Fotografier
           {pendingMedia?.length > 0 && (
             <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-xs text-red-600">
               {pendingMedia.length}
@@ -99,18 +99,18 @@ export function ApprovalTables({
       <TabsContent value="media" className="space-y-4">
         <Card>
           <CardHeader>
-            <CardTitle>Ventende Medier</CardTitle>
+            <CardTitle>Ventende Fotografier</CardTitle>
             <CardDescription>
-              Bilder og videoer som venter på godkjenning fra bedrifter
+              Fotografier som venter på godkjenning fra bedrifter
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Suspense fallback={<div>Laster...</div>}>
               {pendingMediaSuccess ? (
-                <MediaTable data={pendingMedia} />
+                <PhotographTable data={pendingMedia} />
               ) : (
                 <div className="text-sm text-muted-foreground">
-                  Kunne ikke laste inn ventende medier
+                  Kunne ikke laste inn ventende fotografier
                 </div>
               )}
             </Suspense>
