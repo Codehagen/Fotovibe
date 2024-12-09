@@ -101,7 +101,7 @@ export const siteConfig = {
   pricing: [
     {
       name: "BASIC",
-      href: "/bestill",
+      href: "/sign-up",
       price: "10000",
       period: "mnd",
       yearlyPrice: "8333",
@@ -124,7 +124,7 @@ export const siteConfig = {
     },
     {
       name: "PRO",
-      href: "/bestill",
+      href: "/sign-up",
       price: "15000",
       period: "mnd",
       yearlyPrice: "12500",
@@ -149,7 +149,7 @@ export const siteConfig = {
     },
     {
       name: "ENTERPRISE",
-      href: "/bestill",
+      href: "/sign-up",
       price: "20000",
       period: "mnd",
       yearlyPrice: "16667",

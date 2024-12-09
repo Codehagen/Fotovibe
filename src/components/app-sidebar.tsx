@@ -65,6 +65,7 @@ import {
   Users,
   Edit2,
   Clock,
+  CheckCircle2,
 } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 import { NavMain } from "@/components/nav-main";
@@ -124,6 +125,12 @@ const getAllNavItems = (): NavItem[] => {
       title: "Ordre",
       url: "/admin/orders",
       icon: Calendar,
+      roleLabel: "ADMIN",
+    },
+    {
+      title: "Godkjenninger",
+      url: "/admin/approvals",
+      icon: CheckCircle2,
       roleLabel: "ADMIN",
     },
     {
