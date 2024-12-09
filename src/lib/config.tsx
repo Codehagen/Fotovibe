@@ -248,7 +248,7 @@ export const siteConfig = {
     {
       title: "Ressurser",
       links: [
-        { href: "/personvern", text: "Personvernerklæring", icon: null },
+        { href: "/help", text: "Hjelpesenter", icon: null },
         { href: "/vilkar", text: "Vilkår og Betingelser", icon: null },
         { href: "/faq", text: "Ofte Stilte Spørsmål", icon: null },
         { href: "/kundeservice", text: "Kundeservice", icon: null },

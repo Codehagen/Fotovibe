@@ -15,6 +15,8 @@ import {
   TrendingUp,
   Users,
   Webhook,
+  Camera,
+  Calendar,
 } from "lucide-react";
 
 export const BLOG_CATEGORIES: {
@@ -27,61 +29,56 @@ export const BLOG_CATEGORIES: {
     slug: "company",
     description: "Oppdateringer og kunngjøringer fra Fotovibe",
   },
-  // {
-  //   title: "Education",
-  //   slug: "education",
-  //   description: "Educational content about link management.",
-  // },
-  // {
+  {
+    title: "Utdanning",
+    slug: "education",
+    description: "Lær mer om profesjonell bedriftsfotografering",
+  },
 ];
 
 export const POPULAR_ARTICLES = [
-  "introduserer-propdock",
-  "integrere-med-poweroffice",
-  "legge-til-leietaker",
+  "introduserer-fotovibe",
+  "kom-i-gang",
+  "foto-pakker",
+  "booking-system",
+  "bli-fotograf",
 ];
 
 export const HELP_CATEGORIES: {
   title: string;
-  slug:
-    | "oversikt"
-    | "starter"
-    | "eiendomsforvaltning"
-    | "api"
-    | "integrasjoner";
+  slug: "oversikt" | "starter" | "fotografer" | "booking" | "administrasjon";
   description: string;
   icon: JSX.Element;
 }[] = [
   {
-    title: "Propdock Oversikt",
+    title: "Fotovibe Oversikt",
     slug: "oversikt",
-    description:
-      "Lær om Propdock og hvordan det kan hjelpe deg med eiendomsforvaltning.",
+    description: "Lær om Fotovibe og hvordan det kan hjelpe din bedrift.",
     icon: <Settings className="h-6 w-6 text-gray-500" />,
   },
   {
     title: "Kom i Gang",
     slug: "starter",
-    description: "Lær hvordan du kommer i gang med Propdock.",
+    description: "Lær hvordan du kommer i gang med Fotovibe.",
     icon: <PartyPopper className="h-6 w-6 text-gray-500" />,
   },
   {
-    title: "Integrasjoner",
-    slug: "integrasjoner",
-    description: "Lær hvordan du integrerer Propdock med andre systemer.",
-    icon: <Cable className="h-6 w-6 text-gray-500" />,
+    title: "For Fotografer",
+    slug: "fotografer",
+    description: "Informasjon for fotografer som vil jobbe med Fotovibe.",
+    icon: <Camera className="h-6 w-6 text-gray-500" />,
   },
   {
-    title: "Eiendomsforvaltning",
-    slug: "eiendomsforvaltning",
-    description: "Lær hvordan du administrerer dine eiendommer på Propdock.",
-    icon: <Building className="h-6 w-6 text-gray-500" />,
+    title: "Booking",
+    slug: "booking",
+    description: "Lær hvordan du booker og administrerer fotosesjoner.",
+    icon: <Calendar className="h-6 w-6 text-gray-500" />,
   },
   {
-    title: "API",
-    slug: "api",
-    description: "Lær hvordan du bruker Propdock API.",
-    icon: <Webhook className="h-6 w-6 text-gray-500" />,
+    title: "Administrasjon",
+    slug: "administrasjon",
+    description: "Administrer ditt abonnement og bildebibliotek.",
+    icon: <Settings className="h-6 w-6 text-gray-500" />,
   },
 ];
 
