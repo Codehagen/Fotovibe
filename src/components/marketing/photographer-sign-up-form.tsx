@@ -150,7 +150,7 @@ export function PhotographerSignUpForm() {
           <p className="text-sm text-muted-foreground">
             Har du spørsmål i mellomtiden?{" "}
             <Link
-              href="/kontakt"
+              href="/kundeservice"
               className="text-primary underline-offset-4 hover:underline"
             >
               Kontakt oss
@@ -313,7 +313,7 @@ export function PhotographerSignUpForm() {
           >
             Jeg godtar{" "}
             <Link
-              href="/vilkar"
+              href="/terms"
               className="text-primary underline-offset-4 hover:underline"
             >
               vilkårene
