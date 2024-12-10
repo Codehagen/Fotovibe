@@ -27,21 +27,21 @@ export const siteConfig = {
           title: "Bedriftsfotografering",
           description:
             "Profesjonell foto og video på abonnement for din bedrift.",
-          href: "/tjenester",
+          href: "/",
         },
         items: [
           {
-            href: "/tjenester/stemningsbilder",
+            href: "//stemningsbilder",
             title: "Stemningsbilder",
             description: "Fang den unike atmosfæren på arbeidsplassen din.",
           },
           {
-            href: "/tjenester/portrett",
+            href: "//portrett",
             title: "Portrettfotografering",
             description: "Profesjonelle portretter av ansatte og ledelse.",
           },
           {
-            href: "/tjenester/lokaler",
+            href: "//lokaler",
             title: "Lokaler og Fasiliteter",
             description: "Vis frem bedriftens lokaler fra sin beste side.",
           },
@@ -239,18 +239,18 @@ export const siteConfig = {
     {
       title: "Om Oss",
       links: [
-        { href: "/om-oss", text: "Om Fotovibe", icon: null },
+        { href: "/", text: "Om Fotovibe", icon: null },
         { href: "/photograph/sign-up", text: "Bli Fotograf", icon: null },
         { href: "/blog", text: "Blogg", icon: null },
-        { href: "/kontakt", text: "Kontakt", icon: null },
+        { href: "/kundeservice", text: "Kundeservice", icon: null },
       ],
     },
     {
       title: "Ressurser",
       links: [
         { href: "/help", text: "Hjelpesenter", icon: null },
-        { href: "/vilkar", text: "Vilkår og Betingelser", icon: null },
-        { href: "/faq", text: "Ofte Stilte Spørsmål", icon: null },
+        { href: "/terms", text: "Vilkår og Betingelser", icon: null },
+        { href: "/", text: "Ofte Stilte Spørsmål", icon: null },
         { href: "/kundeservice", text: "Kundeservice", icon: null },
       ],
     },

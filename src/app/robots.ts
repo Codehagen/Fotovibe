@@ -24,11 +24,6 @@ export default function robots(): MetadataRoute.Robots {
           "/*.xml$",
         ],
       },
-      {
-        userAgent: "GPTBot",
-        allow: ["/", "/blog/*", "/help/*"],
-        disallow: ["/*"],
-      },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,
     host: baseUrl,

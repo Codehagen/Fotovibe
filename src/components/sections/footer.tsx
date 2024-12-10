@@ -52,7 +52,7 @@ export default function Footer() {
               </Link>
             </li>
             <li className="mr-3 md:mx-4">
-              <Link href="/vilkar" rel="noopener noreferrer">
+              <Link href="/terms" rel="noopener noreferrer">
                 Vilkår og Betingelser
               </Link>
             </li>
