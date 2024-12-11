@@ -4,7 +4,7 @@ import { siteConfig } from "@/lib/config";
 export function constructMetadata({
   title = siteConfig.name,
   description = siteConfig.description,
-  image = "https://propdock.no/_static/thumbnail.png",
+  image = "https://fotovibe.as/_static/thumbnail.png",
   icons = "/favicon.ico",
   noIndex = false,
 }: {
@@ -33,7 +33,7 @@ export function constructMetadata({
       title,
       description,
       images: [image],
-      creator: "@propdock",
+      creator: "@codehagen",
     },
     icons,
     metadataBase: new URL(HOME_DOMAIN),
